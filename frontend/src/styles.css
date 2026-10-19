@@ -1,0 +1,37 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  background: #f4f6f8;
+  font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+  color: #1f2d3d;
+}
+
+.page-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.page-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.page-title {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.page-subtitle {
+  margin: 0 0 16px;
+  color: #7a8699;
+  font-size: 13px;
+}

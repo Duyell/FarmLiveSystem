@@ -1,0 +1,35 @@
+﻿# Build outputs
+backend/target/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Local runtime data
+.local/
+deploy/mysql-data/
+*.log
+
+# Secrets
+.env
+.env.local
+application-local.yml
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Local build/runtime caches
+.m2/
+.npm-cache/
+.tmp/
+maven-settings.xml
+frontend/debug.log
+.pnpm-store/
