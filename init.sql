@@ -27,24 +27,42 @@ CREATE TABLE IF NOT EXISTS role (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色';
 
 -- ============================================================
--- 2. 农户
+-- 2. 区域字典（省 / 市 / 县）
+-- ============================================================
+CREATE TABLE IF NOT EXISTS region (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  code VARCHAR(12) NOT NULL UNIQUE,
+  parent_code VARCHAR(12) NULL,
+  level TINYINT NOT NULL COMMENT '1省 2市 3县',
+  name VARCHAR(80) NOT NULL,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_region_parent (parent_code),
+  INDEX idx_region_level (level)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='行政区划字典，先导入项目区域，后续可扩全国';
+
+-- ============================================================
+-- 3. 农户
 -- ============================================================
 CREATE TABLE IF NOT EXISTS farmer (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   farmer_no VARCHAR(32) NOT NULL UNIQUE,
   name VARCHAR(50) NOT NULL,
   county VARCHAR(50) NOT NULL,
+  county_code VARCHAR(12) NULL,
   phone VARCHAR(20) NOT NULL,
   qualification_status VARCHAR(20) NOT NULL DEFAULT 'pending',
   status VARCHAR(20) NOT NULL DEFAULT 'active',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_farmer_county (county),
-  INDEX idx_farmer_phone (phone)
+  INDEX idx_farmer_county_code (county_code),
+  INDEX idx_farmer_phone (phone),
+  CONSTRAINT fk_farmer_region FOREIGN KEY (county_code) REFERENCES region(code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='农户档案，不存身份证号和家庭住址';
 
 -- ============================================================
--- 3. 账号
+-- 4. 账号
 -- ============================================================
 CREATE TABLE IF NOT EXISTS account (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -65,24 +83,27 @@ CREATE TABLE IF NOT EXISTS account (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='登录账号';
 
 -- ============================================================
--- 4. 场地
+-- 5. 场地
 -- ============================================================
 CREATE TABLE IF NOT EXISTS venue (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   venue_no VARCHAR(32) NOT NULL UNIQUE,
   name VARCHAR(80) NOT NULL,
   location VARCHAR(200) NOT NULL,
+  county_code VARCHAR(12) NULL,
   capacity INT NOT NULL DEFAULT 0,
   open_start TIME NOT NULL,
   open_end TIME NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'available',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_venue_status (status)
+  INDEX idx_venue_county_code (county_code),
+  INDEX idx_venue_status (status),
+  CONSTRAINT fk_venue_region FOREIGN KEY (county_code) REFERENCES region(code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='直播场地';
 
 -- ============================================================
--- 5. 设备
+-- 6. 设备
 -- ============================================================
 CREATE TABLE IF NOT EXISTS device (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -100,7 +121,7 @@ CREATE TABLE IF NOT EXISTS device (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='直播设备，必须属于一个场地';
 
 -- ============================================================
--- 6. 预约
+-- 7. 预约
 -- ============================================================
 CREATE TABLE IF NOT EXISTS booking (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -127,7 +148,7 @@ CREATE TABLE IF NOT EXISTS booking (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='直播预约';
 
 -- ============================================================
--- 7. 预约农产品
+-- 8. 预约农产品
 -- ============================================================
 CREATE TABLE IF NOT EXISTS booking_product (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -141,7 +162,7 @@ CREATE TABLE IF NOT EXISTS booking_product (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='预约主推农产品';
 
 -- ============================================================
--- 8. 资源占用：按小时锁场地和设备
+-- 9. 资源占用：按小时锁场地和设备
 -- ============================================================
 CREATE TABLE IF NOT EXISTS resource_lock (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -159,7 +180,7 @@ CREATE TABLE IF NOT EXISTS resource_lock (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资源占用，按小时唯一';
 
 -- ============================================================
--- 9. 调整申请
+-- 10. 调整申请
 -- ============================================================
 CREATE TABLE IF NOT EXISTS adjustment_request (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -182,7 +203,7 @@ CREATE TABLE IF NOT EXISTS adjustment_request (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='预约调整申请';
 
 -- ============================================================
--- 10. 排队
+-- 11. 排队
 -- ============================================================
 CREATE TABLE IF NOT EXISTS queue_ticket (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -206,7 +227,7 @@ CREATE TABLE IF NOT EXISTS queue_ticket (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='按场地排队';
 
 -- ============================================================
--- 11. 通知
+-- 12. 通知
 -- ============================================================
 CREATE TABLE IF NOT EXISTS notification (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -225,7 +246,7 @@ CREATE TABLE IF NOT EXISTS notification (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知，按渠道分别记状态';
 
 -- ============================================================
--- 12. 直播销售记录
+-- 13. 直播销售记录
 -- ============================================================
 CREATE TABLE IF NOT EXISTS sales_record (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -243,7 +264,7 @@ CREATE TABLE IF NOT EXISTS sales_record (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='直播卖出农产品数量，由直播管理员录入';
 
 -- ============================================================
--- 13. 操作日志
+-- 14. 操作日志
 -- ============================================================
 CREATE TABLE IF NOT EXISTS audit_log (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -261,7 +282,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='操作日志，只追加';
 
 -- ============================================================
--- 14. 知识库文档
+-- 15. 知识库文档
 -- ============================================================
 CREATE TABLE IF NOT EXISTS knowledge_doc (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -281,7 +302,7 @@ CREATE TABLE IF NOT EXISTS knowledge_doc (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI 知识库文档';
 
 -- ============================================================
--- 15. 问答记录
+-- 16. 问答记录
 -- ============================================================
 CREATE TABLE IF NOT EXISTS qa_record (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -304,6 +325,18 @@ INSERT IGNORE INTO role (id, code, name, description) VALUES
   (3, 'farmer', '农户', '预约、排队、候补、通知、个人数据、AI 问答'),
   (4, 'data_viewer', '数据统计员', '查看和导出统计报表，不做业务操作');
 
+-- 先导入项目所在区域；全国数据后续用导入脚本补充
+INSERT IGNORE INTO region (code, parent_code, level, name) VALUES
+  ('340000', NULL, 1, '安徽省'),
+  ('340400', '340000', 2, '淮南市'),
+  ('340402', '340400', 3, '大通区'),
+  ('340403', '340400', 3, '田家庵区'),
+  ('340404', '340400', 3, '谢家集区'),
+  ('340405', '340400', 3, '八公山区'),
+  ('340406', '340400', 3, '潘集区'),
+  ('340421', '340400', 3, '凤台县'),
+  ('340422', '340400', 3, '寿县');
+
 -- 初始系统管理员：admin / Admin@123，首次登录必须改密
 INSERT IGNORE INTO account
   (username, password_hash, display_name, role_id, farmer_id, status, must_change_password)
@@ -315,16 +348,16 @@ VALUES
    NULL, 'active', 1);
 
 INSERT IGNORE INTO farmer
-  (id, farmer_no, name, county, phone, qualification_status, status)
+  (id, farmer_no, name, county, county_code, phone, qualification_status, status)
 VALUES
-  (1, 'NF2026001', '张农户', '寿县', '13800000001', 'verified', 'active'),
-  (2, 'NF2026002', '李农户', '寿县', '13800000002', 'pending', 'active');
+  (1, 'NF2026001', '张农户', '寿县', '340422', '13800000001', 'verified', 'active'),
+  (2, 'NF2026002', '李农户', '寿县', '340422', '13800000002', 'pending', 'active');
 
 INSERT IGNORE INTO venue
-  (id, venue_no, name, location, capacity, open_start, open_end, status)
+  (id, venue_no, name, location, county_code, capacity, open_start, open_end, status)
 VALUES
-  (1, 'C001', '一号直播间', '寿县电商中心一楼', 20, '08:00:00', '20:00:00', 'available'),
-  (2, 'C002', '二号直播间', '寿县电商中心二楼', 15, '09:00:00', '18:00:00', 'available');
+  (1, 'C001', '一号直播间', '寿县电商中心一楼', '340422', 20, '08:00:00', '20:00:00', 'available'),
+  (2, 'C002', '二号直播间', '寿县电商中心二楼', '340422', 15, '09:00:00', '18:00:00', 'available');
 
 INSERT IGNORE INTO device
   (id, device_no, name, model, venue_id, status, calibration_date)
