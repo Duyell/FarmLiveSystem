@@ -28,10 +28,6 @@
           登录
         </el-button>
       </el-form>
-
-      <div class="login-tip">
-        初始账号：admin / Admin@123，首次登录后需要修改密码。
-      </div>
     </div>
   </div>
 </template>
@@ -49,7 +45,7 @@ const captchaLoading = ref(false)
 const captchaId = ref('')
 const captchaQuestion = ref('')
 const form = reactive({
-  username: 'admin',
+  username: '',
   password: '',
   captchaAnswer: ''
 })
@@ -173,15 +169,5 @@ onMounted(loadCaptcha)
   align-items: center;
   gap: 10px;
   width: 100%;
-}
-
-.login-tip {
-  margin-top: 16px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: #f5f8f2;
-  color: #63735f;
-  font-size: 12px;
-  line-height: 1.6;
 }
 </style>
