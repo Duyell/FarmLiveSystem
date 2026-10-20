@@ -62,4 +62,9 @@ export async function del<T>(url: string): Promise<T> {
   return response.data
 }
 
+export async function download(url: string, params?: Record<string, unknown>): Promise<Blob> {
+  const response = await http.get(url, { params, responseType: 'blob' })
+  return response as unknown as Blob
+}
+
 export default http

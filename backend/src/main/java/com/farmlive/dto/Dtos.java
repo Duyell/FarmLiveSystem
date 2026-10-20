@@ -319,4 +319,122 @@ public final class Dtos {
     public record DashboardView(long accounts, long farmers, long venues, long devices, long bookings) {
     }
 
+    // ---------------- adjustment ----------------
+
+    public record AdjustmentCreateRequest(
+            @NotNull(message = "新场地不能为空") Long newVenueId,
+            @NotNull(message = "新设备不能为空") Long newDeviceId,
+            @NotBlank(message = "新开始时间不能为空") String newStartTime,
+            @NotBlank(message = "新结束时间不能为空") String newEndTime,
+            @NotBlank(message = "调整原因不能为空") String reason
+    ) {
+    }
+
+    public record AdjustmentReviewRequest(
+            @NotBlank(message = "审核结果不能为空") String result,
+            String comment
+    ) {
+    }
+
+    public record AdjustmentView(
+            Long id,
+            String requestNo,
+            Long bookingId,
+            String bookingNo,
+            Long farmerId,
+            String farmerName,
+            Long oldVenueId,
+            String oldVenueName,
+            String oldStartTime,
+            String oldEndTime,
+            Long newVenueId,
+            String newVenueName,
+            Long newDeviceId,
+            String newDeviceNo,
+            String newDeviceName,
+            String newStartTime,
+            String newEndTime,
+            String reason,
+            String status,
+            String reviewComment,
+            String createdAt,
+            String reviewedAt
+    ) {
+    }
+
+    // ---------------- sales ----------------
+
+    public record BookingCompleteRequest(
+            @NotBlank(message = "完成状态不能为空") String status
+    ) {
+    }
+
+    public record SalesRequest(
+            @NotNull(message = "预约不能为空") Long bookingId,
+            @NotBlank(message = "农产品名称不能为空") String productName,
+            String spec,
+            @NotNull(message = "数量不能为空") Double quantity,
+            @NotBlank(message = "单位不能为空") String unit
+    ) {
+    }
+
+    public record SalesView(
+            Long id,
+            Long bookingId,
+            String bookingNo,
+            String farmerName,
+            String venueName,
+            String startTime,
+            String productName,
+            String spec,
+            Double quantity,
+            String unit,
+            String createdAt,
+            String updatedAt
+    ) {
+    }
+
+    // ---------------- stats ----------------
+
+    public record StatsOverviewView(
+            double occupancyRate,
+            long liveCount,
+            double soldQuantity,
+            double successRate,
+            long bookingTotal,
+            long approvedCount,
+            long completedCount
+    ) {
+    }
+
+    public record StatsDetailView(
+            Long bookingId,
+            String bookingNo,
+            String farmerName,
+            String venueName,
+            String countyCode,
+            String startTime,
+            String topic,
+            double soldQuantity,
+            long salesCount
+    ) {
+    }
+
+    public record StatsTrendView(String period, long liveCount, double soldQuantity) {
+    }
+
+    // ---------------- audit ----------------
+
+    public record AuditLogView(
+            Long id,
+            Long operatorId,
+            String operatorName,
+            String roleCode,
+            String action,
+            String detail,
+            String ip,
+            String createdAt
+    ) {
+    }
+
 }

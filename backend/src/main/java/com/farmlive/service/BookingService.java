@@ -27,12 +27,14 @@ public class BookingService {
     private final BookingRepository repository;
     private final QueueService queueService;
     private final NotificationService notificationService;
+    private final AuditService auditService;
 
     public BookingService(BookingRepository repository, QueueService queueService,
-                          NotificationService notificationService) {
+                          NotificationService notificationService, AuditService auditService) {
         this.repository = repository;
         this.queueService = queueService;
         this.notificationService = notificationService;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -144,6 +146,26 @@ public class BookingService {
                 reason == null || reason.isBlank() ? "农户主动取消" : reason.trim());
         repository.deleteLocks(booking.id());
         queueService.promoteNext(booking.venueId(), booking.startTime(), booking.endTime());
+        return repository.findViewById(booking.id())
+                .orElseThrow(() -> BusinessException.notFound("预约不存在"));
+    }
+
+    @Transactional
+    public Dtos.BookingView complete(CurrentUser user, Long bookingId, String status) {
+        BookingRepository.BookingRow booking = repository.findRowById(bookingId)
+                .orElseThrow(() -> BusinessException.notFound("预约不存在"));
+        if (!"approved".equals(booking.status())) {
+            throw BusinessException.conflict("BOOKING_STATUS_INVALID", "只有已通过的预约可以标记完成");
+        }
+        if (!"completed".equals(status) && !"no_show".equals(status)) {
+            throw BusinessException.badRequest("状态只能是 completed 或 no_show");
+        }
+        if (LocalDateTime.now().isBefore(booking.endTime())) {
+            throw BusinessException.conflict("BOOKING_NOT_ENDED", "场次结束后才能标记完成或未到场");
+        }
+        repository.updateStatus(booking.id(), status);
+        auditService.record(user, "completed".equals(status) ? "BOOKING_COMPLETE" : "BOOKING_NO_SHOW",
+                "预约 " + booking.bookingNo() + " 标记为 " + status);
         return repository.findViewById(booking.id())
                 .orElseThrow(() -> BusinessException.notFound("预约不存在"));
     }

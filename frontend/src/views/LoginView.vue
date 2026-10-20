@@ -45,7 +45,7 @@ const form = reactive({
 function homeFor(roleCode: string): string {
   if (roleCode === 'farmer') return '/farmer/bookings'
   if (roleCode === 'live_admin') return '/bookings'
-  if (roleCode === 'data_viewer') return '/todo?name=数据统计分析'
+  if (roleCode === 'data_viewer') return '/stats'
   return '/dashboard'
 }
 

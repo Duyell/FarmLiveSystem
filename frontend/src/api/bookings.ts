@@ -102,3 +102,10 @@ export async function reviewBooking(
 ): Promise<Booking> {
   return post<Booking>(`/live/bookings/${id}/review`, payload)
 }
+
+export async function completeBooking(
+  id: number,
+  status: 'completed' | 'no_show'
+): Promise<Booking> {
+  return post<Booking>(`/live/bookings/${id}/complete`, { status })
+}

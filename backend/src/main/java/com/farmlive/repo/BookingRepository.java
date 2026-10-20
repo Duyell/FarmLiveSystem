@@ -151,6 +151,18 @@ public class BookingRepository {
                 reason, id);
     }
 
+    public void updateStatus(Long id, String status) {
+        jdbc.update("UPDATE booking SET status = ? WHERE id = ?", status, id);
+    }
+
+    public void updateResources(Long id, Long venueId, Long deviceId,
+                                LocalDateTime startTime, LocalDateTime endTime) {
+        jdbc.update("""
+                UPDATE booking SET venue_id = ?, device_id = ?, start_time = ?, end_time = ?
+                WHERE id = ?
+                """, venueId, deviceId, Timestamp.valueOf(startTime), Timestamp.valueOf(endTime), id);
+    }
+
     // ---------------- 查询 ----------------
 
     public Optional<BookingRow> findRowById(Long id) {

@@ -21,6 +21,10 @@ const router = createRouter({
         { path: '', redirect: '/dashboard' },
         { path: 'dashboard', name: 'dashboard', component: () => import('../views/DashboardView.vue'), meta: { roles: ['system_admin'] } },
         { path: 'bookings', name: 'live-bookings', component: () => import('../views/LiveBookingsView.vue'), meta: { roles: ['system_admin', 'live_admin'] } },
+        { path: 'live/adjustments', name: 'live-adjustments', component: () => import('../views/LiveAdjustmentsView.vue'), meta: { roles: ['system_admin', 'live_admin'] } },
+        { path: 'live/sales', name: 'live-sales', component: () => import('../views/LiveSalesView.vue'), meta: { roles: ['system_admin', 'live_admin'] } },
+        { path: 'stats', name: 'stats', component: () => import('../views/StatsView.vue'), meta: { roles: ['system_admin', 'live_admin', 'data_viewer'] } },
+        { path: 'admin/logs', name: 'audit-logs', component: () => import('../views/AuditLogsView.vue'), meta: { roles: ['system_admin'] } },
         { path: 'basic-info', name: 'basic-info', component: () => import('../views/BasicInfoView.vue'), meta: { roles: ['system_admin', 'live_admin'] } },
         { path: 'accounts', name: 'accounts', component: () => import('../views/AccountsView.vue'), meta: { roles: ['system_admin'] } },
         { path: 'farmer/bookings', name: 'farmer-bookings', component: () => import('../views/FarmerBookingsView.vue'), meta: { roles: ['farmer'] } },
@@ -44,6 +48,7 @@ function homeFor(user: UserInfo | null): string {
   if (user.mustChangePassword) return '/change-password'
   if (user.roleCode === 'farmer') return '/farmer/bookings'
   if (user.roleCode === 'live_admin') return '/bookings'
+  if (user.roleCode === 'data_viewer') return '/stats'
   return '/dashboard'
 }
 

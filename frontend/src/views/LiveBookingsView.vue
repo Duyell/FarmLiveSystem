@@ -36,7 +36,7 @@
             <el-tag :type="statusMeta(row.status).type">{{ statusMeta(row.status).label }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="90" fixed="right">
+        <el-table-column label="操作" width="210" fixed="right">
           <template #default="{ row }">
             <el-button
               v-if="row.status === 'pending_review'"
@@ -46,6 +46,10 @@
             >
               审核
             </el-button>
+            <template v-else-if="row.status === 'approved' && ended(row)">
+              <el-button link type="success" @click="complete(row, 'completed')">完成</el-button>
+              <el-button link type="info" @click="complete(row, 'no_show')">未到场</el-button>
+            </template>
             <el-button v-else link type="info" @click="openReview(row)">详情</el-button>
           </template>
         </el-table-column>
@@ -130,9 +134,10 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   BOOKING_STATUS,
+  completeBooking,
   listLiveBookings,
   reviewBooking,
   type Booking
@@ -152,6 +157,23 @@ const reviewForm = reactive({ comment: '', recommendedTime: '' })
 
 function statusMeta(value: string) {
   return BOOKING_STATUS[value] ?? { label: value, type: 'info' as const }
+}
+
+function ended(row: Booking): boolean {
+  const end = new Date(row.endTime.replace(' ', 'T')).getTime()
+  return Number.isNaN(end) || end <= Date.now()
+}
+
+async function complete(row: Booking, status: 'completed' | 'no_show') {
+  const label = status === 'completed' ? '完成' : '未到场'
+  try {
+    await ElMessageBox.confirm(`确认将预约 ${row.bookingNo} 标记为“${label}”？`, '确认', { type: 'warning' })
+    await completeBooking(row.id, status)
+    ElMessage.success(`已标记为${label}`)
+    await load()
+  } catch (error) {
+    if (error instanceof Error && error.message) ElMessage.error(error.message)
+  }
 }
 
 async function load() {
