@@ -16,6 +16,10 @@ public class BusinessException extends RuntimeException {
         return new BusinessException(HttpStatus.BAD_REQUEST, "BAD_REQUEST", message);
     }
 
+    public static BusinessException badRequest(String code, String message) {
+        return new BusinessException(HttpStatus.BAD_REQUEST, code, message);
+    }
+
     public static BusinessException unauthorized(String message) {
         return new BusinessException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", message);
     }
@@ -30,6 +34,10 @@ public class BusinessException extends RuntimeException {
 
     public static BusinessException conflict(String message) {
         return new BusinessException(HttpStatus.CONFLICT, "CONFLICT", message);
+    }
+
+    public static BusinessException conflict(String code, String message) {
+        return new BusinessException(HttpStatus.CONFLICT, code, message);
     }
 
     public HttpStatus getStatus() {

@@ -211,17 +211,21 @@ public class AdminRepository {
 
     // ---------------- farmers ----------------
 
-    public PageResult<Dtos.FarmerView> listFarmers(String keyword, int page, int size) {
-        String where = keyword == null || keyword.isBlank() ? "" :
-                " WHERE (farmer_no LIKE ? OR name LIKE ? OR county LIKE ? OR phone LIKE ?) ";
+    public PageResult<Dtos.FarmerView> listFarmers(String keyword, String countyCode, int page, int size) {
+        StringBuilder where = new StringBuilder();
         List<Object> args = new ArrayList<>();
-        if (!where.isBlank()) {
+        if (keyword != null && !keyword.isBlank()) {
+            where.append(" WHERE (farmer_no LIKE ? OR name LIKE ? OR county LIKE ? OR phone LIKE ?) ");
             String like = "%" + keyword.trim() + "%";
             for (int i = 0; i < 4; i++) args.add(like);
         }
+        if (countyCode != null && !countyCode.isBlank()) {
+            where.append(where.length() == 0 ? " WHERE county_code = ? " : " AND county_code = ? ");
+            args.add(countyCode.trim());
+        }
         Long total = jdbc.queryForObject("SELECT COUNT(*) FROM farmer" + where, Long.class, args.toArray());
         List<Dtos.FarmerView> items = jdbc.query("""
-                SELECT id, farmer_no, name, county, phone, qualification_status, status, created_at
+                SELECT id, farmer_no, name, county, county_code, phone, qualification_status, status, created_at
                 FROM farmer
                 """ + where + " ORDER BY id DESC LIMIT ? OFFSET ?",
                 farmerMapper, append(args, size, (page - 1) * size).toArray());
@@ -230,7 +234,7 @@ public class AdminRepository {
 
     public Optional<Dtos.FarmerView> findFarmer(Long id) {
         return jdbc.query("""
-                SELECT id, farmer_no, name, county, phone, qualification_status, status, created_at
+                SELECT id, farmer_no, name, county, county_code, phone, qualification_status, status, created_at
                 FROM farmer WHERE id = ?
                 """, farmerMapper, id).stream().findFirst();
     }
@@ -240,32 +244,33 @@ public class AdminRepository {
                 (rs, rowNum) -> rs.getString("phone"), id).stream().findFirst();
     }
 
-    public Long createFarmer(String farmerNo, String name, String county, String phone,
+    public Long createFarmer(String farmerNo, String name, String county, String countyCode, String phone,
                              String qualificationStatus, String status) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbc.update(con -> {
             PreparedStatement ps = con.prepareStatement("""
-                    INSERT INTO farmer (farmer_no, name, county, phone, qualification_status, status)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO farmer (farmer_no, name, county, county_code, phone, qualification_status, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     """, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, farmerNo);
             ps.setString(2, name);
             ps.setString(3, county);
-            ps.setString(4, phone);
-            ps.setString(5, qualificationStatus);
-            ps.setString(6, status);
+            ps.setString(4, countyCode);
+            ps.setString(5, phone);
+            ps.setString(6, qualificationStatus);
+            ps.setString(7, status);
             return ps;
         }, keyHolder);
         Number key = keyHolder.getKey();
         return key == null ? null : key.longValue();
     }
 
-    public void updateFarmer(Long id, String name, String county, String phone,
+    public void updateFarmer(Long id, String name, String county, String countyCode, String phone,
                              String qualificationStatus, String status) {
         jdbc.update("""
-                UPDATE farmer SET name = ?, county = ?, phone = ?, qualification_status = ?, status = ?
+                UPDATE farmer SET name = ?, county = ?, county_code = ?, phone = ?, qualification_status = ?, status = ?
                 WHERE id = ?
-                """, name, county, phone, qualificationStatus, status, id);
+                """, name, county, countyCode, phone, qualificationStatus, status, id);
     }
 
     public void deleteFarmer(Long id) {
@@ -279,17 +284,21 @@ public class AdminRepository {
 
     // ---------------- venues ----------------
 
-    public PageResult<Dtos.VenueView> listVenues(String keyword, int page, int size) {
-        String where = keyword == null || keyword.isBlank() ? "" :
-                " WHERE (venue_no LIKE ? OR name LIKE ? OR location LIKE ?) ";
+    public PageResult<Dtos.VenueView> listVenues(String keyword, String countyCode, int page, int size) {
+        StringBuilder where = new StringBuilder();
         List<Object> args = new ArrayList<>();
-        if (!where.isBlank()) {
+        if (keyword != null && !keyword.isBlank()) {
+            where.append(" WHERE (venue_no LIKE ? OR name LIKE ? OR location LIKE ?) ");
             String like = "%" + keyword.trim() + "%";
             for (int i = 0; i < 3; i++) args.add(like);
         }
+        if (countyCode != null && !countyCode.isBlank()) {
+            where.append(where.length() == 0 ? " WHERE county_code = ? " : " AND county_code = ? ");
+            args.add(countyCode.trim());
+        }
         Long total = jdbc.queryForObject("SELECT COUNT(*) FROM venue" + where, Long.class, args.toArray());
         List<Dtos.VenueView> items = jdbc.query("""
-                SELECT id, venue_no, name, location, capacity, open_start, open_end, status, created_at
+                SELECT id, venue_no, name, location, capacity, open_start, open_end, county_code, status, created_at
                 FROM venue
                 """ + where + " ORDER BY id DESC LIMIT ? OFFSET ?",
                 venueMapper, append(args, size, (page - 1) * size).toArray());
@@ -298,18 +307,18 @@ public class AdminRepository {
 
     public Optional<Dtos.VenueView> findVenue(Long id) {
         return jdbc.query("""
-                SELECT id, venue_no, name, location, capacity, open_start, open_end, status, created_at
+                SELECT id, venue_no, name, location, capacity, open_start, open_end, county_code, status, created_at
                 FROM venue WHERE id = ?
                 """, venueMapper, id).stream().findFirst();
     }
 
     public Long createVenue(String venueNo, String name, String location, Integer capacity,
-                            LocalTime openStart, LocalTime openEnd, String status) {
+                            LocalTime openStart, LocalTime openEnd, String countyCode, String status) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbc.update(con -> {
             PreparedStatement ps = con.prepareStatement("""
-                    INSERT INTO venue (venue_no, name, location, capacity, open_start, open_end, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO venue (venue_no, name, location, capacity, open_start, open_end, county_code, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, venueNo);
             ps.setString(2, name);
@@ -317,7 +326,8 @@ public class AdminRepository {
             ps.setInt(4, capacity);
             ps.setTime(5, Time.valueOf(openStart));
             ps.setTime(6, Time.valueOf(openEnd));
-            ps.setString(7, status);
+            ps.setString(7, countyCode);
+            ps.setString(8, status);
             return ps;
         }, keyHolder);
         Number key = keyHolder.getKey();
@@ -325,11 +335,12 @@ public class AdminRepository {
     }
 
     public void updateVenue(Long id, String name, String location, Integer capacity,
-                            LocalTime openStart, LocalTime openEnd, String status) {
+                            LocalTime openStart, LocalTime openEnd, String countyCode, String status) {
         jdbc.update("""
-                UPDATE venue SET name = ?, location = ?, capacity = ?, open_start = ?, open_end = ?, status = ?
+                UPDATE venue SET name = ?, location = ?, capacity = ?, open_start = ?, open_end = ?,
+                                county_code = ?, status = ?
                 WHERE id = ?
-                """, name, location, capacity, Time.valueOf(openStart), Time.valueOf(openEnd), status, id);
+                """, name, location, capacity, Time.valueOf(openStart), Time.valueOf(openEnd), countyCode, status, id);
     }
 
     public void deleteVenue(Long id) {
@@ -471,6 +482,7 @@ public class AdminRepository {
             rs.getString("farmer_no"),
             rs.getString("name"),
             rs.getString("county"),
+            rs.getString("county_code"),
             maskPhone(rs.getString("phone")),
             rs.getString("qualification_status"),
             rs.getString("status"),
@@ -485,6 +497,7 @@ public class AdminRepository {
             rs.getInt("capacity"),
             rs.getTime("open_start").toLocalTime().format(TIME),
             rs.getTime("open_end").toLocalTime().format(TIME),
+            rs.getString("county_code"),
             rs.getString("status"),
             dateTime(rs.getTimestamp("created_at"))
     );

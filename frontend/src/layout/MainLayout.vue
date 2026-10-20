@@ -1,45 +1,41 @@
 <template>
   <el-container class="layout">
-    <el-aside width="220px" class="aside">
-      <div class="logo">
-        <div class="logo-mark">助</div>
-        <div>
-          <div class="logo-title">助农直播</div>
-          <div class="logo-sub">管理系统</div>
+    <el-aside width="232px" class="aside">
+      <div class="brand">
+        <div class="brand-mark"><el-icon :size="18"><LocationFilled /></el-icon></div>
+        <span class="brand-title">助农直播管理系统</span>
+      </div>
+
+      <div class="user-card">
+        <div class="user-avatar">{{ avatarText }}</div>
+        <div class="user-meta">
+          <div class="user-name">{{ roleLabel }}：{{ user?.displayName || user?.username }}</div>
+          <div class="user-role">{{ user?.roleName }}权限</div>
         </div>
       </div>
 
+      <div class="menu-group">系统功能</div>
       <el-menu :default-active="route.path" router class="menu">
-        <el-menu-item index="/dashboard">
-          <el-icon><DataBoard /></el-icon>
-          <span>工作台</span>
-        </el-menu-item>
-        <el-menu-item index="/accounts">
-          <el-icon><User /></el-icon>
-          <span>账号管理</span>
-        </el-menu-item>
-        <el-menu-item index="/farmers">
-          <el-icon><Avatar /></el-icon>
-          <span>农户管理</span>
-        </el-menu-item>
-        <el-menu-item index="/venues">
-          <el-icon><OfficeBuilding /></el-icon>
-          <span>场地管理</span>
-        </el-menu-item>
-        <el-menu-item index="/devices">
-          <el-icon><Monitor /></el-icon>
-          <span>设备管理</span>
+        <el-menu-item v-for="item in menus" :key="item.path" :index="item.path">
+          <el-icon><component :is="item.icon" /></el-icon>
+          <span>{{ item.title }}</span>
         </el-menu-item>
       </el-menu>
+
+      <div class="aside-footer">
+        <el-button class="logout-button" :icon="SwitchButton" @click="logout">退出登录</el-button>
+      </div>
     </el-aside>
 
     <el-container>
       <el-header class="header">
-        <div class="header-title">系统管理员</div>
-        <div class="header-right">
-          <span class="user-name">{{ user?.displayName || user?.username }}</span>
-          <el-button text :icon="SwitchButton" @click="logout">退出</el-button>
+        <div>
+          <div class="header-title">{{ pageTitle }}</div>
+          <div class="header-sub">{{ pageSubtitle }}</div>
         </div>
+        <el-badge :value="1" class="bell" type="danger">
+          <el-icon :size="18"><Bell /></el-icon>
+        </el-badge>
       </el-header>
       <el-main class="main">
         <router-view />
@@ -49,15 +45,90 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { DataBoard, User, Avatar, OfficeBuilding, Monitor, SwitchButton } from '@element-plus/icons-vue'
+import {
+  Bell,
+  Calendar,
+  DataBoard,
+  Files,
+  List,
+  LocationFilled,
+  Lock,
+  QuestionFilled,
+  Sort,
+  SwitchButton,
+  TrendCharts
+} from '@element-plus/icons-vue'
 import { post } from '../api/http'
 import { clearAuth, currentUser } from '../api/auth'
+
+interface MenuItem {
+  path: string
+  title: string
+  icon: unknown
+}
+
+const menuByRole: Record<string, MenuItem[]> = {
+  system_admin: [
+    { path: '/dashboard', title: '工作台', icon: DataBoard },
+    { path: '/bookings', title: '直播预约管理', icon: Calendar },
+    { path: '/basic-info', title: '基础信息管理', icon: Files },
+    { path: '/accounts', title: '权限管理', icon: Lock },
+    { path: '/todo?name=直播排队与候补', title: '直播排队与候补', icon: Sort },
+    { path: '/todo?name=通知管理', title: '通知管理', icon: Bell },
+    { path: '/todo?name=数据统计分析', title: '数据统计分析', icon: TrendCharts },
+    { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
+  ],
+  live_admin: [
+    { path: '/bookings', title: '直播预约管理', icon: Calendar },
+    { path: '/todo?name=直播排队与候补', title: '直播排队与候补', icon: Sort },
+    { path: '/todo?name=通知管理', title: '通知管理', icon: Bell },
+    { path: '/todo?name=数据统计分析', title: '数据统计分析', icon: TrendCharts },
+    { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
+  ],
+  farmer: [
+    { path: '/farmer/bookings/new', title: '直播预约管理', icon: Calendar },
+    { path: '/farmer/bookings', title: '我的预约', icon: List },
+    { path: '/todo?name=直播排队与候补', title: '直播排队与候补', icon: Sort },
+    { path: '/todo?name=通知管理', title: '通知管理', icon: Bell },
+    { path: '/todo?name=数据统计分析', title: '数据统计分析', icon: TrendCharts },
+    { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
+  ],
+  data_viewer: [
+    { path: '/todo?name=数据统计分析', title: '数据统计分析', icon: TrendCharts },
+    { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
+  ]
+}
+
+const pageTitleByPath: Record<string, string> = {
+  '/dashboard': '工作台',
+  '/bookings': '直播预约管理',
+  '/basic-info': '基础信息管理',
+  '/accounts': '权限管理',
+  '/farmer/bookings': '我的预约',
+  '/farmer/bookings/new': '直播预约提交'
+}
+
+const pageSubtitleByPath: Record<string, string> = {
+  '/dashboard': '汇总账号、农户、场地、设备和预约数据',
+  '/bookings': '审核农户提交的直播预约',
+  '/basic-info': '管理农户信息、直播设备和场地等基础数据',
+  '/accounts': '管理系统账号和角色权限',
+  '/farmer/bookings': '查看和管理您的直播预约状态',
+  '/farmer/bookings/new': '提交直播预约信息，等待管理员审核'
+}
 
 const route = useRoute()
 const router = useRouter()
 const user = currentUser()
+
+const menus = computed<MenuItem[]>(() => menuByRole[user?.roleCode ?? ''] ?? [])
+const avatarText = computed(() => (user?.displayName || user?.username || '?').slice(0, 1))
+const roleLabel = computed(() => (user?.roleCode === 'system_admin' ? '管理员' : user?.roleName))
+const pageTitle = computed(() => pageTitleByPath[route.path] ?? '功能建设中')
+const pageSubtitle = computed(() => pageSubtitleByPath[route.path] ?? '')
 
 async function logout() {
   try {
@@ -77,82 +148,150 @@ async function logout() {
 }
 
 .aside {
-  background: #173b24;
+  background: linear-gradient(180deg, #2f7d32 0%, #245f27 100%);
   color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 0 14px;
 }
 
-.logo {
-  height: 76px;
+.brand {
+  height: 64px;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 20px;
 }
 
-.logo-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
+.brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
-  background: #67c23a;
-  font-weight: 700;
+  background: rgba(255, 255, 255, 0.18);
 }
 
-.logo-title {
-  font-size: 16px;
+.brand-title {
+  font-size: 15px;
   font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
-.logo-sub {
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  margin-bottom: 14px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.user-meta {
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 2px;
+}
+
+.menu-group {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.55);
-  margin-top: 2px;
+  padding: 4px 8px 8px;
 }
 
 .menu {
   border-right: none;
   background: transparent;
+  flex: 1;
 }
 
 .menu :deep(.el-menu-item) {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.menu :deep(.el-menu-item.is-active) {
-  color: #fff;
-  background: rgba(103, 194, 58, 0.18);
+  height: 44px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.78);
+  transition: background 0.2s;
 }
 
 .menu :deep(.el-menu-item:hover) {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.menu :deep(.el-menu-item.is-active) {
+  color: #1f3b25;
+  background: #eaf4ea;
+  font-weight: 600;
+}
+
+.aside-footer {
+  padding: 12px 0 16px;
+}
+
+.logout-button {
+  width: 100%;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.logout-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 .header {
+  height: 68px;
   background: #fff;
   border-bottom: 1px solid #eef1f4;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 0 24px;
 }
 
 .header-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
+  color: #1f3b25;
 }
 
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.header-sub {
+  font-size: 12px;
+  color: #7a8699;
+  margin-top: 2px;
 }
 
-.user-name {
+.bell {
+  cursor: pointer;
   color: #5c6b7a;
-  font-size: 13px;
 }
 
 .main {
   padding: 22px;
+  background: #f5f7fa;
 }
 </style>

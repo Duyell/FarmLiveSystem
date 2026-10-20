@@ -5,7 +5,20 @@
         <div class="brand-mark">助</div>
         <div>
           <h1>助农直播管理系统</h1>
-          <p>管理端 · 系统管理员</p>
+          <p>请选择角色并登录</p>
+        </div>
+      </div>
+
+      <div class="role-list">
+        <div
+          v-for="role in roles"
+          :key="role.code"
+          class="role-item"
+          :class="{ active: form.roleCode === role.code }"
+          @click="form.roleCode = role.code"
+        >
+          <div class="role-name">{{ role.name }}</div>
+          <div class="role-desc">{{ role.desc }}</div>
         </div>
       </div>
 
@@ -35,12 +48,27 @@ import { ElMessage } from 'element-plus'
 import { post } from '../api/http'
 import { saveAuth, type LoginResult } from '../api/auth'
 
+const roles = [
+  { code: 'system_admin', name: '系统管理员', desc: '账号、农户、场地、设备与预约审核' },
+  { code: 'live_admin', name: '直播管理员', desc: '预约审核、排队与销售管理' },
+  { code: 'farmer', name: '农户', desc: '预约直播、查看排队与通知' },
+  { code: 'data_viewer', name: '数据统计员', desc: '统计查看与导出' }
+]
+
 const router = useRouter()
 const loading = ref(false)
 const form = reactive({
+  roleCode: 'system_admin',
   username: 'admin',
   password: ''
 })
+
+function homeFor(roleCode: string): string {
+  if (roleCode === 'farmer') return '/farmer/bookings'
+  if (roleCode === 'live_admin') return '/bookings'
+  if (roleCode === 'data_viewer') return '/todo?name=数据统计分析'
+  return '/dashboard'
+}
 
 async function submit() {
   if (!form.username.trim() || !form.password) {
@@ -51,14 +79,15 @@ async function submit() {
   try {
     const result = await post<LoginResult>('/auth/login', {
       username: form.username.trim(),
-      password: form.password
+      password: form.password,
+      roleCode: form.roleCode
     })
     saveAuth(result.token, result.user)
     if (result.user.mustChangePassword) {
       ElMessage.info('首次登录，请先修改密码')
       await router.replace('/change-password')
     } else {
-      await router.replace('/dashboard')
+      await router.replace(homeFor(result.user.roleCode))
     }
   } catch (error) {
     ElMessage.error((error as Error).message)
@@ -81,8 +110,8 @@ async function submit() {
 }
 
 .login-card {
-  width: 420px;
-  padding: 34px 34px 26px;
+  width: 460px;
+  padding: 30px 34px 24px;
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 18px 50px rgba(23, 62, 35, 0.14);
@@ -92,7 +121,7 @@ async function submit() {
   display: flex;
   gap: 14px;
   align-items: center;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
 .brand-mark {
@@ -109,7 +138,7 @@ async function submit() {
 
 .brand h1 {
   margin: 0;
-  font-size: 21px;
+  font-size: 20px;
   color: #1f3b25;
 }
 
@@ -117,6 +146,47 @@ async function submit() {
   margin: 5px 0 0;
   color: #7a8699;
   font-size: 13px;
+}
+
+.role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.role-item {
+  padding: 10px 14px;
+  border: 1px solid #e4e9f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+
+.role-item:hover {
+  border-color: #a9c6ff;
+  background: #f7faff;
+}
+
+.role-item.active {
+  border-color: #3b6cff;
+  background: #ecf2ff;
+}
+
+.role-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2d3d;
+}
+
+.role-item.active .role-name {
+  color: #3b6cff;
+}
+
+.role-desc {
+  font-size: 12px;
+  color: #7a8699;
+  margin-top: 2px;
 }
 
 .login-button {
@@ -127,7 +197,7 @@ async function submit() {
 }
 
 .login-tip {
-  margin-top: 18px;
+  margin-top: 16px;
   padding: 10px 12px;
   border-radius: 8px;
   background: #f5f8f2;

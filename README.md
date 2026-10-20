@@ -128,8 +128,12 @@ npm run build
 
 | 分组 | 地址 |
 |---|---|
-| 登录 | `POST /api/auth/login` |
+| 区域字典 | `GET /api/regions` |
+| 可用资源 | `GET /api/resources/available` |
+| 登录 | `POST /api/auth/login`（可选 `roleCode`，校验与账号角色一致） |
 | 当前用户 | `GET /api/auth/me` |
+| 农户预约 | `POST /api/farmer/bookings`、`GET /api/farmer/bookings`、`POST /api/farmer/bookings/{id}/cancel` |
+| 预约审核 | `GET /api/live/bookings`、`POST /api/live/bookings/{id}/review` |
 | 修改密码 | `POST /api/auth/change-password` |
 | 退出 | `POST /api/auth/logout` |
 | 工作台 | `GET /api/admin/dashboard` |

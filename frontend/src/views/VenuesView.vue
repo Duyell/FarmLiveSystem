@@ -5,7 +5,11 @@
 
     <div class="page-card">
       <div class="page-toolbar">
-        <el-input v-model="keyword" placeholder="搜索场地编号 / 名称 / 位置" clearable style="width: 260px" @keyup.enter="load" />
+        <el-input v-model="keyword" placeholder="搜索场地编号 / 名称 / 位置" clearable style="width: 220px" @keyup.enter="load" />
+        <RegionSelect v-model="filterCountyCode" style="width: 260px" @change="changeRegionFilter" />
+        <el-tag v-if="filterLabel" class="filter-tag" type="info" closable @close="clearRegionFilter">
+          {{ filterLabel }}
+        </el-tag>
         <el-button type="primary" @click="load">查询</el-button>
         <el-button @click="openCreate">新增场地</el-button>
       </div>
@@ -13,7 +17,8 @@
       <el-table :data="rows" v-loading="loading" border stripe>
         <el-table-column prop="venueNo" label="场地编号" width="120" />
         <el-table-column prop="name" label="场地名称" width="150" />
-        <el-table-column prop="location" label="位置" min-width="200" />
+        <el-table-column prop="county" label="所属区域" width="130" />
+        <el-table-column prop="location" label="位置" min-width="180" />
         <el-table-column prop="capacity" label="容纳人数" width="100" />
         <el-table-column label="开放时段" width="130">
           <template #default="{ row }">{{ row.openStart }} - {{ row.openEnd }}</template>
@@ -53,6 +58,9 @@
         <el-form-item label="位置">
           <el-input v-model="form.location" />
         </el-form-item>
+        <el-form-item label="所属区域" required>
+          <RegionSelect v-model="form.countyCode" />
+        </el-form-item>
         <el-form-item label="容纳人数">
           <el-input-number v-model="form.capacity" :min="1" :max="1000" />
         </el-form-item>
@@ -79,15 +87,18 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { del, get, post, put, type PageResult } from '../api/http'
+import { findRegionPath } from '../api/regions'
+import RegionSelect from '../components/RegionSelect.vue'
 
 interface Venue {
   id: number
   venueNo: string
   name: string
   location: string
+  countyCode: string | null
   capacity: number
   openStart: string
   openEnd: string
@@ -97,6 +108,11 @@ interface Venue {
 
 const rows = ref<Venue[]>([])
 const keyword = ref('')
+const filterCountyCode = ref('')
+const filterLabel = computed(() => {
+  const path = findRegionPath(filterCountyCode.value)
+  return path ? path.map((item) => item.name).join(' / ') : ''
+})
 const page = ref(1)
 const size = ref(10)
 const total = ref(0)
@@ -110,6 +126,7 @@ const form = reactive({
   venueNo: '',
   name: '',
   location: '',
+  countyCode: '',
   capacity: 10,
   openStart: '08:00',
   openEnd: '20:00',
@@ -129,6 +146,7 @@ async function load() {
   try {
     const result = await get<PageResult<Venue>>('/admin/venues', {
       keyword: keyword.value,
+      countyCode: filterCountyCode.value,
       page: page.value,
       size: size.value
     })
@@ -141,6 +159,17 @@ async function load() {
   }
 }
 
+function changeRegionFilter() {
+  page.value = 1
+  load()
+}
+
+function clearRegionFilter() {
+  filterCountyCode.value = ''
+  page.value = 1
+  load()
+}
+
 function openCreate() {
   isEdit.value = false
   Object.assign(form, {
@@ -148,6 +177,7 @@ function openCreate() {
     venueNo: '',
     name: '',
     location: '',
+    countyCode: '',
     capacity: 10,
     openStart: '08:00',
     openEnd: '20:00',
@@ -167,6 +197,10 @@ async function save() {
     ElMessage.warning('请把场地编号、名称、位置填完整')
     return
   }
+  if (!form.countyCode) {
+    ElMessage.warning('请选择完整的省 / 市 / 县')
+    return
+  }
   if (!form.openStart || !form.openEnd || form.openStart >= form.openEnd) {
     ElMessage.warning('开放开始时间必须早于结束时间')
     return
@@ -177,6 +211,7 @@ async function save() {
       venueNo: form.venueNo,
       name: form.name,
       location: form.location,
+      countyCode: form.countyCode,
       capacity: form.capacity,
       openStart: form.openStart,
       openEnd: form.openEnd,
@@ -223,5 +258,11 @@ onMounted(load)
 .pager {
   margin-top: 16px;
   justify-content: flex-end;
+}
+
+.filter-tag {
+  height: 32px;
+  padding: 0 10px;
+  line-height: 30px;
 }
 </style>

@@ -5,7 +5,11 @@
 
     <div class="page-card">
       <div class="page-toolbar">
-        <el-input v-model="keyword" placeholder="搜索编号 / 姓名 / 县域 / 手机号" clearable style="width: 280px" @keyup.enter="load" />
+        <el-input v-model="keyword" placeholder="搜索编号 / 姓名 / 县域 / 手机号" clearable style="width: 240px" @keyup.enter="load" />
+        <RegionSelect v-model="filterCountyCode" style="width: 260px" @change="changeRegionFilter" />
+        <el-tag v-if="filterLabel" class="filter-tag" type="info" closable @close="clearRegionFilter">
+          {{ filterLabel }}
+        </el-tag>
         <el-button type="primary" @click="load">查询</el-button>
         <el-button @click="openCreate">新增农户</el-button>
       </div>
@@ -57,8 +61,8 @@
         <el-form-item label="姓名">
           <el-input v-model="form.name" />
         </el-form-item>
-        <el-form-item label="所属县域">
-          <el-input v-model="form.county" />
+        <el-form-item label="所属区域" required>
+          <RegionSelect v-model="form.countyCode" />
         </el-form-item>
         <el-form-item label="手机号">
           <el-input v-model="form.phone" placeholder="11 位手机号" />
@@ -87,15 +91,18 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { del, get, post, put, type PageResult } from '../api/http'
+import { findRegionPath } from '../api/regions'
+import RegionSelect from '../components/RegionSelect.vue'
 
 interface Farmer {
   id: number
   farmerNo: string
   name: string
   county: string
+  countyCode: string | null
   phone: string
   qualificationStatus: string
   status: string
@@ -104,6 +111,11 @@ interface Farmer {
 
 const rows = ref<Farmer[]>([])
 const keyword = ref('')
+const filterCountyCode = ref('')
+const filterLabel = computed(() => {
+  const path = findRegionPath(filterCountyCode.value)
+  return path ? path.map((item) => item.name).join(' / ') : ''
+})
 const page = ref(1)
 const size = ref(10)
 const total = ref(0)
@@ -116,7 +128,7 @@ const form = reactive({
   id: 0,
   farmerNo: '',
   name: '',
-  county: '',
+  countyCode: '',
   phone: '',
   qualificationStatus: 'pending',
   status: 'active'
@@ -135,6 +147,7 @@ async function load() {
   try {
     const result = await get<PageResult<Farmer>>('/admin/farmers', {
       keyword: keyword.value,
+      countyCode: filterCountyCode.value,
       page: page.value,
       size: size.value
     })
@@ -147,13 +160,24 @@ async function load() {
   }
 }
 
+function changeRegionFilter() {
+  page.value = 1
+  load()
+}
+
+function clearRegionFilter() {
+  filterCountyCode.value = ''
+  page.value = 1
+  load()
+}
+
 function openCreate() {
   isEdit.value = false
   Object.assign(form, {
     id: 0,
     farmerNo: '',
     name: '',
-    county: '',
+    countyCode: '',
     phone: '',
     qualificationStatus: 'pending',
     status: 'active'
@@ -168,8 +192,12 @@ function openEdit(row: Farmer) {
 }
 
 async function save() {
-  if (!form.farmerNo.trim() || !form.name.trim() || !form.county.trim() || !form.phone.trim()) {
-    ElMessage.warning('请把农户编号、姓名、县域、手机号填完整')
+  if (!form.farmerNo.trim() || !form.name.trim() || !form.phone.trim()) {
+    ElMessage.warning('请把农户编号、姓名、手机号填完整')
+    return
+  }
+  if (!form.countyCode) {
+    ElMessage.warning('请选择完整的省 / 市 / 县')
     return
   }
   if (!/^1\d{10}$/.test(form.phone) && !form.phone.includes('****')) {
@@ -181,7 +209,7 @@ async function save() {
     const payload = {
       farmerNo: form.farmerNo,
       name: form.name,
-      county: form.county,
+      countyCode: form.countyCode,
       phone: form.phone,
       qualificationStatus: form.qualificationStatus,
       status: form.status
@@ -227,5 +255,11 @@ onMounted(load)
 .pager {
   margin-top: 16px;
   justify-content: flex-end;
+}
+
+.filter-tag {
+  height: 32px;
+  padding: 0 10px;
+  line-height: 30px;
 }
 </style>

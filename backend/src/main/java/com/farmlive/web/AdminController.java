@@ -8,6 +8,8 @@ import com.farmlive.common.BusinessException;
 import com.farmlive.common.PageResult;
 import com.farmlive.dto.Dtos;
 import com.farmlive.repo.AdminRepository;
+import com.farmlive.repo.RegionRepository;
+import com.farmlive.repo.RegionRepository.RegionRow;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,10 +31,13 @@ import java.util.List;
 public class AdminController {
     private final AdminRepository repository;
     private final PasswordService passwordService;
+    private final RegionRepository regionRepository;
 
-    public AdminController(AdminRepository repository, PasswordService passwordService) {
+    public AdminController(AdminRepository repository, PasswordService passwordService,
+                           RegionRepository regionRepository) {
         this.repository = repository;
         this.passwordService = passwordService;
+        this.regionRepository = regionRepository;
     }
 
     @GetMapping("/dashboard")
@@ -158,18 +163,20 @@ public class AdminController {
     @GetMapping("/farmers")
     public ApiResponse<PageResult<Dtos.FarmerView>> farmers(
             @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(required = false) String countyCode,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ApiResponse.ok(repository.listFarmers(keyword, normalizePage(page), normalizeSize(size)));
+        return ApiResponse.ok(repository.listFarmers(keyword, countyCode, normalizePage(page), normalizeSize(size)));
     }
 
     @PostMapping("/farmers")
     public ApiResponse<Dtos.FarmerView> createFarmer(@Valid @RequestBody Dtos.FarmerRequest request) {
         validatePhone(request.phone());
+        String county = resolveCountyName(request.countyCode());
         String qualification = normalizeQualification(request.qualificationStatus());
         String status = normalizeAccountStatus(request.status());
         Long id = repository.createFarmer(request.farmerNo().trim(), request.name().trim(),
-                request.county().trim(), request.phone().trim(), qualification, status);
+                county, request.countyCode().trim(), request.phone().trim(), qualification, status);
         return ApiResponse.ok(repository.findFarmer(id)
                 .orElseThrow(() -> BusinessException.notFound("农户创建失败")));
     }
@@ -185,9 +192,10 @@ public class AdminController {
                     .orElseThrow(() -> BusinessException.notFound("农户不存在"));
         }
         validatePhone(phone);
+        String county = resolveCountyName(request.countyCode());
         String qualification = normalizeQualification(request.qualificationStatus());
         String status = normalizeAccountStatus(request.status());
-        repository.updateFarmer(id, request.name().trim(), request.county().trim(),
+        repository.updateFarmer(id, request.name().trim(), county, request.countyCode().trim(),
                 phone, qualification, status);
         return ApiResponse.ok(repository.findFarmer(id)
                 .orElseThrow(() -> BusinessException.notFound("农户不存在")));
@@ -211,9 +219,10 @@ public class AdminController {
     @GetMapping("/venues")
     public ApiResponse<PageResult<Dtos.VenueView>> venues(
             @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(required = false) String countyCode,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ApiResponse.ok(repository.listVenues(keyword, normalizePage(page), normalizeSize(size)));
+        return ApiResponse.ok(repository.listVenues(keyword, countyCode, normalizePage(page), normalizeSize(size)));
     }
 
     @PostMapping("/venues")
@@ -221,9 +230,10 @@ public class AdminController {
         LocalTime start = parseTime(request.openStart());
         LocalTime end = parseTime(request.openEnd());
         validateVenueTimes(start, end, request.capacity());
+        resolveCountyName(request.countyCode());
         String status = normalizeResourceStatus(request.status());
         Long id = repository.createVenue(request.venueNo().trim(), request.name().trim(),
-                request.location().trim(), request.capacity(), start, end, status);
+                request.location().trim(), request.capacity(), start, end, request.countyCode().trim(), status);
         return ApiResponse.ok(repository.findVenue(id)
                 .orElseThrow(() -> BusinessException.notFound("场地创建失败")));
     }
@@ -236,9 +246,10 @@ public class AdminController {
         LocalTime start = parseTime(request.openStart());
         LocalTime end = parseTime(request.openEnd());
         validateVenueTimes(start, end, request.capacity());
+        resolveCountyName(request.countyCode());
         String status = normalizeResourceStatus(request.status());
         repository.updateVenue(id, request.name().trim(), request.location().trim(),
-                request.capacity(), start, end, status);
+                request.capacity(), start, end, request.countyCode().trim(), status);
         return ApiResponse.ok(repository.findVenue(id)
                 .orElseThrow(() -> BusinessException.notFound("场地不存在")));
     }
@@ -341,6 +352,25 @@ public class AdminController {
         if (phone == null || !phone.matches("^1\\d{10}$")) {
             throw BusinessException.badRequest("手机号必须是 11 位数字");
         }
+    }
+
+    /**
+     * 校验区域编码：必须存在、启用中且为县级（level=3），返回区域名称作为 county 快照。
+     * county 列 NOT NULL 且只做展示，统一由后端按编码回写，防止前端伪造文本。
+     */
+    private String resolveCountyName(String countyCode) {
+        if (countyCode == null || countyCode.isBlank()) {
+            throw BusinessException.badRequest("所属区域不能为空");
+        }
+        RegionRow region = regionRepository.findRowByCode(countyCode)
+                .orElseThrow(() -> BusinessException.badRequest("所属区域不存在"));
+        if (!region.enabled()) {
+            throw BusinessException.badRequest("所属区域已停用");
+        }
+        if (region.level() != 3) {
+            throw BusinessException.badRequest("所属区域必须选择到县 / 区一级");
+        }
+        return region.name();
     }
 
     private void validateVenueTimes(LocalTime start, LocalTime end, Integer capacity) {

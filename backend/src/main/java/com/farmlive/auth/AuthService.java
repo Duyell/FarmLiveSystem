@@ -26,6 +26,10 @@ public class AuthService {
         if (!passwordService.matches(request.password(), account.passwordHash())) {
             throw BusinessException.unauthorized("用户名或密码错误");
         }
+        if (request.roleCode() != null && !request.roleCode().isBlank()
+                && !request.roleCode().trim().equals(account.roleCode())) {
+            throw BusinessException.forbidden("请选择正确的角色");
+        }
         CurrentUser user = new CurrentUser(
                 account.id(), account.username(), account.displayName(),
                 account.roleCode(), account.roleName(), account.farmerId(), account.farmerName(),

@@ -54,6 +54,17 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
+        if (path.startsWith("/api/farmer") && !"farmer".equals(user.roleCode())) {
+            write(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN", "该功能仅农户可用");
+            return false;
+        }
+
+        if (path.startsWith("/api/live") && !"live_admin".equals(user.roleCode())
+                && !"system_admin".equals(user.roleCode())) {
+            write(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN", "该功能仅直播管理员可用");
+            return false;
+        }
+
         return true;
     }
 
