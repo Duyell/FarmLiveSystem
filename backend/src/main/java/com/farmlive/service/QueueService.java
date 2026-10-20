@@ -106,7 +106,7 @@ public class QueueService {
         queueRepository.updateStatus(row.id(), "abandoned");
         queueRepository.shiftPositions(row.venueId(), row.slotStart(), row.position());
         if ("candidate".equals(row.status())) {
-            promoteNext(row.venueId(), row.slotStart());
+            promoteNext(row.venueId(), row.slotStart(), row.slotEnd());
         } else {
             notifyNewFirstQueued(row.venueId(), row.slotStart());
         }
@@ -188,14 +188,14 @@ public class QueueService {
      * 预约取消释放场地后晋升队首；晋升条件不满足则保持队列等待下次触发。
      */
     @Transactional
-    public void promoteNext(Long venueId, LocalDateTime slotStart) {
+    public void promoteNext(Long venueId, LocalDateTime slotStart, LocalDateTime slotEnd) {
         if (Duration.between(LocalDateTime.now(), slotStart).toHours() < 24) {
             return;
         }
-        if (bookingRepository.venueHasOverlap(venueId, slotStart, slotStart.plusHours(4))) {
+        if (bookingRepository.venueHasOverlap(venueId, slotStart, slotEnd)) {
             return;
         }
-        if (queueRepository.pickAvailableDevice(venueId, slotStart, slotStart.plusHours(4)).isEmpty()) {
+        if (queueRepository.pickAvailableDevice(venueId, slotStart, slotEnd).isEmpty()) {
             return;
         }
         queueRepository.firstQueued(venueId, slotStart).ifPresent(first -> {
@@ -237,7 +237,7 @@ public class QueueService {
         for (QueueRepository.QueueRow row : queueRepository.expiredCandidates()) {
             queueRepository.updateStatus(row.id(), "expired");
             queueRepository.shiftPositions(row.venueId(), row.slotStart(), row.position());
-            promoteNext(row.venueId(), row.slotStart());
+            promoteNext(row.venueId(), row.slotStart(), row.slotEnd());
             notifyNewFirstQueued(row.venueId(), row.slotStart());
         }
     }

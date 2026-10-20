@@ -143,7 +143,7 @@ public class BookingService {
         repository.updateCancel(booking.id(),
                 reason == null || reason.isBlank() ? "农户主动取消" : reason.trim());
         repository.deleteLocks(booking.id());
-        queueService.promoteNext(booking.venueId(), booking.startTime());
+        queueService.promoteNext(booking.venueId(), booking.startTime(), booking.endTime());
         return repository.findViewById(booking.id())
                 .orElseThrow(() -> BusinessException.notFound("预约不存在"));
     }
