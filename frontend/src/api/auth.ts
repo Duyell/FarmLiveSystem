@@ -1,3 +1,5 @@
+import { get } from './http'
+
 export interface UserInfo {
   id: number
   username: string
@@ -12,6 +14,15 @@ export interface UserInfo {
 export interface LoginResult {
   token: string
   user: UserInfo
+}
+
+export interface Captcha {
+  captchaId: string
+  question: string
+}
+
+export async function getCaptcha(): Promise<Captcha> {
+  return get<Captcha>('/auth/captcha')
 }
 
 export function saveAuth(token: string, user: UserInfo) {

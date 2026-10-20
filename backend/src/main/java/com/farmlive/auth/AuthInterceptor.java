@@ -28,7 +28,8 @@ public class AuthInterceptor implements HandlerInterceptor {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) return true;
 
         String path = request.getRequestURI();
-        if (path.equals("/api/auth/login") || path.equals("/api/health")) return true;
+        if (path.equals("/api/auth/login") || path.equals("/api/auth/captcha")
+                || path.equals("/api/health")) return true;
 
         String token = bearerToken(request);
         Optional<CurrentUser> userOpt = tokenStore.get(token);

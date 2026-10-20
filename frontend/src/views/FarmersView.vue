@@ -34,8 +34,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="建档时间" width="170" />
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" @click="openQualification(row)">资质</el-button>
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="remove(row)">删除</el-button>
           </template>
@@ -81,12 +82,21 @@
             <el-radio value="disabled">停用</el-radio>
           </el-radio-group>
         </el-form-item>
+        <el-form-item v-if="isEdit" label="修改原因">
+          <el-input v-model="form.changeReason" maxlength="200" placeholder="本次修改的原因，会写入操作日志" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="saving" @click="save">保存</el-button>
       </template>
     </el-dialog>
+
+    <FarmerQualificationDialog
+      v-model="qualificationVisible"
+      :farmer-id="qualificationFarmerId"
+      :farmer-name="qualificationFarmerName"
+    />
   </div>
 </template>
 
@@ -96,6 +106,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { del, get, post, put, type PageResult } from '../api/http'
 import { findRegionPath } from '../api/regions'
 import RegionSelect from '../components/RegionSelect.vue'
+import FarmerQualificationDialog from '../components/FarmerQualificationDialog.vue'
 
 interface Farmer {
   id: number
@@ -123,6 +134,9 @@ const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
 const isEdit = ref(false)
+const qualificationVisible = ref(false)
+const qualificationFarmerId = ref(0)
+const qualificationFarmerName = ref('')
 
 const form = reactive({
   id: 0,
@@ -131,7 +145,8 @@ const form = reactive({
   countyCode: '',
   phone: '',
   qualificationStatus: 'pending',
-  status: 'active'
+  status: 'active',
+  changeReason: ''
 })
 
 function qualificationLabel(value: string) {
@@ -180,15 +195,22 @@ function openCreate() {
     countyCode: '',
     phone: '',
     qualificationStatus: 'pending',
-    status: 'active'
+    status: 'active',
+    changeReason: ''
   })
   dialogVisible.value = true
 }
 
 function openEdit(row: Farmer) {
   isEdit.value = true
-  Object.assign(form, row)
+  Object.assign(form, row, { changeReason: '' })
   dialogVisible.value = true
+}
+
+function openQualification(row: Farmer) {
+  qualificationFarmerId.value = row.id
+  qualificationFarmerName.value = row.name
+  qualificationVisible.value = true
 }
 
 async function save() {
@@ -212,7 +234,8 @@ async function save() {
       countyCode: form.countyCode,
       phone: form.phone,
       qualificationStatus: form.qualificationStatus,
-      status: form.status
+      status: form.status,
+      changeReason: form.changeReason
     }
     if (isEdit.value) {
       await put(`/live/farmers/${form.id}`, payload)

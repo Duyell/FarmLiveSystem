@@ -10,11 +10,20 @@
           <el-option label="预约调整-提交" value="BOOKING_ADJUST_SUBMIT" />
           <el-option label="预约调整-通过" value="BOOKING_ADJUST_APPROVE" />
           <el-option label="预约调整-驳回" value="BOOKING_ADJUST_REJECT" />
+          <el-option label="预约审核" value="BOOKING_REVIEW" />
+          <el-option label="预约取消" value="BOOKING_CANCEL" />
           <el-option label="场次完成" value="BOOKING_COMPLETE" />
           <el-option label="场次未到场" value="BOOKING_NO_SHOW" />
           <el-option label="销售录入" value="SALES_CREATE" />
           <el-option label="销售修改" value="SALES_UPDATE" />
           <el-option label="销售删除" value="SALES_DELETE" />
+          <el-option label="资质上传" value="QUALIFICATION_UPLOAD" />
+          <el-option label="资质通过" value="QUALIFICATION_APPROVED" />
+          <el-option label="资质驳回" value="QUALIFICATION_REJECTED" />
+          <el-option label="农户新增" value="FARMER_CREATE" />
+          <el-option label="农户修改" value="FARMER_UPDATE" />
+          <el-option label="场地修改" value="VENUE_UPDATE" />
+          <el-option label="设备修改" value="DEVICE_UPDATE" />
         </el-select>
         <el-date-picker
           v-model="range"

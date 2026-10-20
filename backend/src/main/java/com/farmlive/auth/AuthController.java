@@ -15,10 +15,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final AuthService authService;
     private final TokenStore tokenStore;
+    private final CaptchaService captchaService;
 
-    public AuthController(AuthService authService, TokenStore tokenStore) {
+    public AuthController(AuthService authService, TokenStore tokenStore, CaptchaService captchaService) {
         this.authService = authService;
         this.tokenStore = tokenStore;
+        this.captchaService = captchaService;
+    }
+
+    @GetMapping("/captcha")
+    public ApiResponse<java.util.Map<String, String>> captcha() {
+        return ApiResponse.ok(captchaService.generate());
     }
 
     @PostMapping("/login")

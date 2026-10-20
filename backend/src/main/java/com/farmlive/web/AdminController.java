@@ -11,6 +11,7 @@ import com.farmlive.repo.AdminRepository;
 import com.farmlive.repo.RegionRepository;
 import com.farmlive.repo.RegionRepository.RegionRow;
 import com.farmlive.service.NotificationService;
+import com.farmlive.service.AuditService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,13 +35,16 @@ public class AdminController {
     private final PasswordService passwordService;
     private final RegionRepository regionRepository;
     private final NotificationService notificationService;
+    private final AuditService auditService;
 
     public AdminController(AdminRepository repository, PasswordService passwordService,
-                           RegionRepository regionRepository, NotificationService notificationService) {
+                           RegionRepository regionRepository, NotificationService notificationService,
+                           AuditService auditService) {
         this.repository = repository;
         this.passwordService = passwordService;
         this.regionRepository = regionRepository;
         this.notificationService = notificationService;
+        this.auditService = auditService;
     }
 
     @GetMapping("/dashboard")
@@ -79,6 +83,7 @@ public class AdminController {
         String hash = encodePassword(request.password());
         Long id = repository.createAccount(username, hash, request.displayName().trim(),
                 role.id(), request.farmerId(), status);
+        auditService.recordCurrent("ACCOUNT_CREATE", "创建账号 " + username + "，角色 " + role.code());
         return ApiResponse.ok(repository.findAccount(id)
                 .orElseThrow(() -> BusinessException.notFound("账号创建失败")));
     }
@@ -107,6 +112,9 @@ public class AdminController {
         }
         validateFarmerLink(role, request.farmerId(), id);
         repository.updateAccount(id, request.displayName().trim(), role.id(), request.farmerId(), status);
+        auditService.recordCurrent("ACCOUNT_UPDATE",
+                "修改账号 " + existing.username() + "，角色 " + existing.roleCode() + " -> " + role.code()
+                        + "，状态 " + existing.status() + " -> " + status);
         return ApiResponse.ok(repository.findAccount(id)
                 .orElseThrow(() -> BusinessException.notFound("账号不存在")));
     }
@@ -124,6 +132,7 @@ public class AdminController {
             throw BusinessException.conflict("不能删除最后一个系统管理员");
         }
         repository.deleteAccount(id);
+        auditService.recordCurrent("ACCOUNT_DELETE", "删除账号 " + existing.username());
         return ApiResponse.ok();
     }
 
@@ -131,9 +140,11 @@ public class AdminController {
     public ApiResponse<Void> resetPassword(
             @PathVariable Long id,
             @Valid @RequestBody Dtos.ResetPasswordRequest request) {
-        repository.findAccount(id).orElseThrow(() -> BusinessException.notFound("账号不存在"));
+        Dtos.AccountView account = repository.findAccount(id)
+                .orElseThrow(() -> BusinessException.notFound("账号不存在"));
         String hash = encodePassword(request.newPassword());
         repository.updatePassword(id, hash, true);
+        auditService.recordCurrent("ACCOUNT_RESET_PASSWORD", "重置账号 " + account.username() + " 的密码");
         return ApiResponse.ok();
     }
 
@@ -180,6 +191,8 @@ public class AdminController {
         String status = normalizeAccountStatus(request.status());
         Long id = repository.createFarmer(request.farmerNo().trim(), request.name().trim(),
                 county, request.countyCode().trim(), request.phone().trim(), qualification, status);
+        auditService.recordCurrent("FARMER_CREATE",
+                "创建农户 " + request.farmerNo().trim() + " / " + request.name().trim());
         return ApiResponse.ok(repository.findFarmer(id)
                 .orElseThrow(() -> BusinessException.notFound("农户创建失败")));
     }
@@ -188,7 +201,8 @@ public class AdminController {
     public ApiResponse<Dtos.FarmerView> updateFarmer(
             @PathVariable Long id,
             @Valid @RequestBody Dtos.FarmerRequest request) {
-        repository.findFarmer(id).orElseThrow(() -> BusinessException.notFound("农户不存在"));
+        Dtos.FarmerView existing = repository.findFarmer(id)
+                .orElseThrow(() -> BusinessException.notFound("农户不存在"));
         String phone = request.phone().trim();
         if (phone.contains("****")) {
             phone = repository.findFarmerPhone(id)
@@ -200,13 +214,20 @@ public class AdminController {
         String status = normalizeAccountStatus(request.status());
         repository.updateFarmer(id, request.name().trim(), county, request.countyCode().trim(),
                 phone, qualification, status);
+        auditService.recordCurrent("FARMER_UPDATE",
+                "农户 " + existing.farmerNo() + "：" + existing.name() + " -> " + request.name().trim()
+                        + "，区域 " + existing.countyCode() + " -> " + request.countyCode().trim()
+                        + "，资质 " + existing.qualificationStatus() + " -> " + qualification
+                        + "，状态 " + existing.status() + " -> " + status
+                        + "，原因：" + safeReason(request.changeReason()));
         return ApiResponse.ok(repository.findFarmer(id)
                 .orElseThrow(() -> BusinessException.notFound("农户不存在")));
     }
 
     @DeleteMapping("/farmers/{id}")
     public ApiResponse<Void> deleteFarmer(@PathVariable Long id) {
-        repository.findFarmer(id).orElseThrow(() -> BusinessException.notFound("农户不存在"));
+        Dtos.FarmerView existing = repository.findFarmer(id)
+                .orElseThrow(() -> BusinessException.notFound("农户不存在"));
         if (repository.farmerHasAccount(id, null)) {
             throw BusinessException.conflict("该农户有账号，不能删除");
         }
@@ -214,6 +235,8 @@ public class AdminController {
             throw BusinessException.conflict("该农户有预约，不能删除");
         }
         repository.deleteFarmer(id);
+        auditService.recordCurrent("FARMER_DELETE",
+                "删除农户 " + existing.farmerNo() + " / " + existing.name());
         return ApiResponse.ok();
     }
 
@@ -237,6 +260,8 @@ public class AdminController {
         String status = normalizeResourceStatus(request.status());
         Long id = repository.createVenue(request.venueNo().trim(), request.name().trim(),
                 request.location().trim(), request.capacity(), start, end, request.countyCode().trim(), status);
+        auditService.recordCurrent("VENUE_CREATE",
+                "创建场地 " + request.venueNo().trim() + " / " + request.name().trim());
         return ApiResponse.ok(repository.findVenue(id)
                 .orElseThrow(() -> BusinessException.notFound("场地创建失败")));
     }
@@ -245,7 +270,8 @@ public class AdminController {
     public ApiResponse<Dtos.VenueView> updateVenue(
             @PathVariable Long id,
             @Valid @RequestBody Dtos.VenueRequest request) {
-        repository.findVenue(id).orElseThrow(() -> BusinessException.notFound("场地不存在"));
+        Dtos.VenueView existing = repository.findVenue(id)
+                .orElseThrow(() -> BusinessException.notFound("场地不存在"));
         LocalTime start = parseTime(request.openStart());
         LocalTime end = parseTime(request.openEnd());
         validateVenueTimes(start, end, request.capacity());
@@ -253,13 +279,17 @@ public class AdminController {
         String status = normalizeResourceStatus(request.status());
         repository.updateVenue(id, request.name().trim(), request.location().trim(),
                 request.capacity(), start, end, request.countyCode().trim(), status);
+        auditService.recordCurrent("VENUE_UPDATE",
+                "场地 " + existing.venueNo() + "：" + existing.name() + " -> " + request.name().trim()
+                        + "，状态 " + existing.status() + " -> " + status);
         return ApiResponse.ok(repository.findVenue(id)
                 .orElseThrow(() -> BusinessException.notFound("场地不存在")));
     }
 
     @DeleteMapping("/venues/{id}")
     public ApiResponse<Void> deleteVenue(@PathVariable Long id) {
-        repository.findVenue(id).orElseThrow(() -> BusinessException.notFound("场地不存在"));
+        Dtos.VenueView existing = repository.findVenue(id)
+                .orElseThrow(() -> BusinessException.notFound("场地不存在"));
         if (repository.venueHasDevices(id)) {
             throw BusinessException.conflict("该场地下还有设备，不能删除");
         }
@@ -267,6 +297,8 @@ public class AdminController {
             throw BusinessException.conflict("该场地有预约，不能删除");
         }
         repository.deleteVenue(id);
+        auditService.recordCurrent("VENUE_DELETE",
+                "删除场地 " + existing.venueNo() + " / " + existing.name());
         return ApiResponse.ok();
     }
 
@@ -288,6 +320,8 @@ public class AdminController {
         LocalDate calibration = parseDate(request.calibrationDate());
         Long id = repository.createDevice(request.deviceNo().trim(), request.name().trim(),
                 trimToNull(request.model()), request.venueId(), status, calibration);
+        auditService.recordCurrent("DEVICE_CREATE",
+                "创建设备 " + request.deviceNo().trim() + " / " + request.name().trim());
         return ApiResponse.ok(repository.findDevice(id)
                 .orElseThrow(() -> BusinessException.notFound("设备创建失败")));
     }
@@ -308,17 +342,26 @@ public class AdminController {
                 && ("maintenance".equals(status) || "disabled".equals(status))) {
             notificationService.notifyDeviceFault(id, existing.name());
         }
+        auditService.recordCurrent("DEVICE_UPDATE",
+                "设备 " + existing.deviceNo() + "：" + existing.name() + " -> " + request.name().trim()
+                        + "，场地 " + existing.venueId() + " -> " + request.venueId()
+                        + "，状态 " + existing.status() + " -> " + status
+                        + "，校准 " + existing.calibrationDate() + " -> " + request.calibrationDate()
+                        + "，原因：" + safeReason(request.changeReason()));
         return ApiResponse.ok(repository.findDevice(id)
                 .orElseThrow(() -> BusinessException.notFound("设备不存在")));
     }
 
     @DeleteMapping("/devices/{id}")
     public ApiResponse<Void> deleteDevice(@PathVariable Long id) {
-        repository.findDevice(id).orElseThrow(() -> BusinessException.notFound("设备不存在"));
+        Dtos.DeviceView existing = repository.findDevice(id)
+                .orElseThrow(() -> BusinessException.notFound("设备不存在"));
         if (repository.deviceHasBooking(id)) {
             throw BusinessException.conflict("该设备有预约，不能删除");
         }
         repository.deleteDevice(id);
+        auditService.recordCurrent("DEVICE_DELETE",
+                "删除设备 " + existing.deviceNo() + " / " + existing.name());
         return ApiResponse.ok();
     }
 
@@ -411,5 +454,9 @@ public class AdminController {
         if (value == null) return null;
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String safeReason(String value) {
+        return value == null || value.isBlank() ? "未填写" : value.trim();
     }
 }

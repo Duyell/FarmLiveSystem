@@ -66,6 +66,9 @@
         <el-form-item label="下次校准">
           <el-date-picker v-model="form.calibrationDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" />
         </el-form-item>
+        <el-form-item v-if="isEdit" label="修改原因">
+          <el-input v-model="form.changeReason" maxlength="200" placeholder="本次修改的原因，会写入操作日志" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -116,7 +119,8 @@ const form = reactive({
   model: '',
   venueId: 0,
   status: 'available',
-  calibrationDate: ''
+  calibrationDate: '',
+  changeReason: ''
 })
 
 function statusLabel(value: string) {
@@ -162,7 +166,8 @@ function openCreate() {
     model: '',
     venueId: venues.value[0]?.id || 0,
     status: 'available',
-    calibrationDate: ''
+    calibrationDate: '',
+    changeReason: ''
   })
   dialogVisible.value = true
 }
@@ -176,7 +181,8 @@ function openEdit(row: Device) {
     model: row.model || '',
     venueId: row.venueId,
     status: row.status,
-    calibrationDate: row.calibrationDate || ''
+    calibrationDate: row.calibrationDate || '',
+    changeReason: ''
   })
   dialogVisible.value = true
 }
@@ -194,7 +200,8 @@ async function save() {
       model: form.model,
       venueId: form.venueId,
       status: form.status,
-      calibrationDate: form.calibrationDate || null
+      calibrationDate: form.calibrationDate || null,
+      changeReason: form.changeReason
     }
     if (isEdit.value) {
       await put(`/live/devices/${form.id}`, payload)

@@ -12,7 +12,9 @@ public final class Dtos {
     public record LoginRequest(
             @NotBlank(message = "用户名不能为空") String username,
             @NotBlank(message = "密码不能为空") String password,
-            String roleCode
+            String roleCode,
+            String captchaId,
+            String captchaAnswer
     ) {
     }
 
@@ -263,7 +265,8 @@ public final class Dtos {
             @NotBlank(message = "所属区域不能为空") String countyCode,
             @NotBlank(message = "手机号不能为空") String phone,
             String qualificationStatus,
-            String status
+            String status,
+            String changeReason
     ) {
     }
 
@@ -312,11 +315,14 @@ public final class Dtos {
             String model,
             @NotNull(message = "所属场地不能为空") Long venueId,
             String status,
-            String calibrationDate
+            String calibrationDate,
+            String changeReason
     ) {
     }
 
-    public record DashboardView(long accounts, long farmers, long venues, long devices, long bookings) {
+    public record DashboardView(long accounts, long farmers, long venues, long devices, long bookings,
+                                long pendingReview, long todayLive,
+                                long availableVenues, long availableDevices) {
     }
 
     // ---------------- adjustment ----------------
@@ -434,6 +440,28 @@ public final class Dtos {
             String detail,
             String ip,
             String createdAt
+    ) {
+    }
+
+    // ---------------- qualification ----------------
+
+    public record QualificationView(
+            Long id,
+            Long farmerId,
+            String originalName,
+            String contentType,
+            long fileSize,
+            String status,
+            String reviewComment,
+            String uploaderName,
+            String createdAt,
+            String reviewedAt
+    ) {
+    }
+
+    public record QualificationReviewRequest(
+            @NotBlank(message = "审核结果不能为空") String result,
+            String comment
     ) {
     }
 

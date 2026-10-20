@@ -16,6 +16,14 @@
         <el-form-item label="密码">
           <el-input v-model="form.password" type="password" show-password size="large" placeholder="请输入密码" />
         </el-form-item>
+        <el-form-item label="验证码">
+          <div class="captcha-row">
+            <el-input v-model="form.captchaAnswer" size="large" placeholder="请输入计算结果" />
+            <el-button link type="primary" :loading="captchaLoading" @click="loadCaptcha">
+              {{ captchaQuestion || '获取验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
         <el-button type="primary" size="large" :loading="loading" class="login-button" @click="submit">
           登录
         </el-button>
@@ -29,18 +37,36 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { post } from '../api/http'
-import { saveAuth, type LoginResult } from '../api/auth'
+import { getCaptcha, saveAuth, type LoginResult } from '../api/auth'
 
 const router = useRouter()
 const loading = ref(false)
+const captchaLoading = ref(false)
+const captchaId = ref('')
+const captchaQuestion = ref('')
 const form = reactive({
   username: 'admin',
-  password: ''
+  password: '',
+  captchaAnswer: ''
 })
+
+async function loadCaptcha() {
+  captchaLoading.value = true
+  try {
+    const result = await getCaptcha()
+    captchaId.value = result.captchaId
+    captchaQuestion.value = result.question
+    form.captchaAnswer = ''
+  } catch (error) {
+    ElMessage.error((error as Error).message)
+  } finally {
+    captchaLoading.value = false
+  }
+}
 
 function homeFor(roleCode: string): string {
   if (roleCode === 'farmer') return '/farmer/bookings'
@@ -54,11 +80,17 @@ async function submit() {
     ElMessage.warning('请输入用户名和密码')
     return
   }
+  if (!form.captchaAnswer.trim()) {
+    ElMessage.warning('请输入验证码')
+    return
+  }
   loading.value = true
   try {
     const result = await post<LoginResult>('/auth/login', {
       username: form.username.trim(),
-      password: form.password
+      password: form.password,
+      captchaId: captchaId.value,
+      captchaAnswer: form.captchaAnswer.trim()
     })
     saveAuth(result.token, result.user)
     if (result.user.mustChangePassword) {
@@ -69,10 +101,13 @@ async function submit() {
     }
   } catch (error) {
     ElMessage.error((error as Error).message)
+    await loadCaptcha()
   } finally {
     loading.value = false
   }
 }
+
+onMounted(loadCaptcha)
 </script>
 
 <style scoped>
@@ -131,6 +166,13 @@ async function submit() {
   margin-top: 6px;
   background: #2f7d32;
   border-color: #2f7d32;
+}
+
+.captcha-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
 }
 
 .login-tip {

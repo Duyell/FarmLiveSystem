@@ -105,6 +105,8 @@ public class BookingService {
         } else {
             throw BusinessException.badRequest("审核结果只能是 approve 或 reject");
         }
+        auditService.recordCurrent("BOOKING_REVIEW",
+                "预约 " + booking.bookingNo() + " 审核为 " + result);
         Dtos.BookingView view = repository.findViewById(booking.id())
                 .orElseThrow(() -> BusinessException.notFound("预约不存在"));
         notifyReviewResult(view);
@@ -145,6 +147,7 @@ public class BookingService {
         repository.updateCancel(booking.id(),
                 reason == null || reason.isBlank() ? "农户主动取消" : reason.trim());
         repository.deleteLocks(booking.id());
+        auditService.record(user, "BOOKING_CANCEL", "取消预约 " + booking.bookingNo());
         queueService.promoteNext(booking.venueId(), booking.startTime(), booking.endTime());
         return repository.findViewById(booking.id())
                 .orElseThrow(() -> BusinessException.notFound("预约不存在"));

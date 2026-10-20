@@ -10,26 +10,40 @@ public class AuthService {
     private final AdminRepository repository;
     private final PasswordService passwordService;
     private final TokenStore tokenStore;
+    private final CaptchaService captchaService;
+    private final LoginAttemptService loginAttemptService;
 
-    public AuthService(AdminRepository repository, PasswordService passwordService, TokenStore tokenStore) {
+    public AuthService(AdminRepository repository, PasswordService passwordService,
+                       TokenStore tokenStore, CaptchaService captchaService,
+                       LoginAttemptService loginAttemptService) {
         this.repository = repository;
         this.passwordService = passwordService;
         this.tokenStore = tokenStore;
+        this.captchaService = captchaService;
+        this.loginAttemptService = loginAttemptService;
     }
 
     public Dtos.LoginResponse login(Dtos.LoginRequest request) {
-        AdminRepository.AuthAccount account = repository.findAuthByUsername(request.username().trim())
-                .orElseThrow(() -> BusinessException.unauthorized("用户名或密码错误"));
+        String username = request.username().trim();
+        loginAttemptService.check(username);
+        captchaService.verify(request.captchaId(), request.captchaAnswer());
+        AdminRepository.AuthAccount account = repository.findAuthByUsername(username)
+                .orElseThrow(() -> {
+                    loginAttemptService.fail(username);
+                    return BusinessException.unauthorized("用户名或密码错误");
+                });
         if (!"active".equals(account.status())) {
             throw BusinessException.unauthorized("账号已停用");
         }
         if (!passwordService.matches(request.password(), account.passwordHash())) {
+            loginAttemptService.fail(username);
             throw BusinessException.unauthorized("用户名或密码错误");
         }
         if (request.roleCode() != null && !request.roleCode().isBlank()
                 && !request.roleCode().trim().equals(account.roleCode())) {
-            throw BusinessException.forbidden("请选择正确的角色");
+            throw BusinessException.forbidden("角色不匹配");
         }
+        loginAttemptService.success(username);
         CurrentUser user = new CurrentUser(
                 account.id(), account.username(), account.displayName(),
                 account.roleCode(), account.roleName(), account.farmerId(), account.farmerName(),

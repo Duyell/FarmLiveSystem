@@ -429,12 +429,21 @@ public class AdminRepository {
 
     public Dtos.DashboardView dashboard() {
         return new Dtos.DashboardView(
-                count("account"), count("farmer"), count("venue"), count("device"), count("booking")
+                count("account"), count("farmer"), count("venue"), count("device"), count("booking"),
+                countWhere("booking", "status = 'pending_review'"),
+                countWhere("booking", "status IN ('approved','completed') AND start_time >= CURDATE() AND start_time < DATE_ADD(CURDATE(), INTERVAL 1 DAY)"),
+                countWhere("venue", "status = 'available'"),
+                countWhere("device", "status = 'available'")
         );
     }
 
     private long count(String table) {
         Long value = jdbc.queryForObject("SELECT COUNT(*) FROM " + table, Long.class);
+        return value == null ? 0 : value;
+    }
+
+    private long countWhere(String table, String where) {
+        Long value = jdbc.queryForObject("SELECT COUNT(*) FROM " + table + " WHERE " + where, Long.class);
         return value == null ? 0 : value;
     }
 

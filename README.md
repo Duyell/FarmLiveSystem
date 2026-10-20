@@ -42,7 +42,7 @@ mysql -uroot -p < init.sql
 
 - 数据库 `farm_live`；
 - 开发用户 `farmlive`，密码 `farmlive123`；
-- 16 张表；
+- 18 张表；
 - 四种角色；
 - 系统管理员：`admin / Admin@123`，首次登录必须改密；
 - 安徽省 / 淮南市 / 寿县等区域字典数据；
@@ -108,6 +108,8 @@ admin / Admin@123
 
 首次登录会跳转到修改密码页，修改后重新登录。
 
+登录页需要填写验证码；接口调用先 `GET /api/auth/captcha`，登录时带 `captchaId` 和 `captchaAnswer`。连续失败 5 次锁定 15 分钟。
+
 ---
 
 ## 6. 构建
@@ -131,6 +133,7 @@ npm run build
 | 区域字典 | `GET /api/regions` |
 | 可用资源 | `GET /api/resources/available` |
 | 直播管理员基础数据 | `GET/POST/PUT/DELETE /api/live/farmers`、`/api/live/venues`、`/api/live/devices` |
+| 农户资质材料 | `GET/POST /api/live/farmers/{id}/qualifications`、`POST /api/live/qualifications/{id}/review` |
 | 登录 | `POST /api/auth/login` |
 | 当前用户 | `GET /api/auth/me` |
 | 农户预约 | `POST /api/farmer/bookings`、`GET /api/farmer/bookings`、`POST /api/farmer/bookings/{id}/cancel` |

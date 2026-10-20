@@ -32,6 +32,23 @@ public class AuditService {
         repository.insert(operatorId, name, role, action, detail, checksum(content));
     }
 
+    /**
+     * 从当前请求属性取操作人，供旧 CRUD 接口补日志，避免改所有控制器方法签名。
+     */
+    public void recordCurrent(String action, String detail) {
+        CurrentUser user = null;
+        var attributes = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (attributes != null) {
+            Object value = attributes.getAttribute(
+                    com.farmlive.auth.AuthInterceptor.CURRENT_USER,
+                    org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
+            if (value instanceof CurrentUser current) {
+                user = current;
+            }
+        }
+        record(user, action, detail);
+    }
+
     public PageResult<Dtos.AuditLogView> page(String keyword, String action,
                                               String from, String to, int page, int size) {
         LocalDateTime fromTime = parseDate(from, false);

@@ -1,7 +1,7 @@
 <template>
   <div>
     <h2 class="page-title">工作台</h2>
-    <p class="page-subtitle">系统管理员视角，查看当前基础数据规模。</p>
+    <p class="page-subtitle">系统管理员视角，查看待审核、今日直播和资源概况。</p>
 
     <el-row :gutter="16">
       <el-col :xs="24" :sm="12" :lg="6" v-for="item in cards" :key="item.key">
@@ -19,7 +19,7 @@
 
     <div class="page-card quick-card">
       <h3>当前开发范围</h3>
-      <p>已覆盖登录、账号、农户、场地、设备、区域、预约审核、排队候补和通知。统计、权限审计和 AI 助手在后续迭代实现。</p>
+      <p>已覆盖登录、账号、农户、场地、设备、区域、预约调整、排队候补、通知、销售统计和操作日志。二次验证、AI 助手和手机适配在后续迭代实现。</p>
       <el-alert
         title="初始密码提示"
         type="warning"
@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { User, Avatar, OfficeBuilding, Monitor, Tickets } from '@element-plus/icons-vue'
+import { Avatar, Calendar, Monitor, OfficeBuilding, Tickets, Warning } from '@element-plus/icons-vue'
 import { get } from '../api/http'
 
 interface Dashboard {
@@ -43,6 +43,10 @@ interface Dashboard {
   venues: number
   devices: number
   bookings: number
+  pendingReview: number
+  todayLive: number
+  availableVenues: number
+  availableDevices: number
 }
 
 const data = reactive<Dashboard>({
@@ -50,15 +54,20 @@ const data = reactive<Dashboard>({
   farmers: 0,
   venues: 0,
   devices: 0,
-  bookings: 0
+  bookings: 0,
+  pendingReview: 0,
+  todayLive: 0,
+  availableVenues: 0,
+  availableDevices: 0
 })
 
 const cards = ref([
-  { key: 'accounts' as const, label: '账号', icon: User, bg: '#e8f4e4' },
-  { key: 'farmers' as const, label: '农户', icon: Avatar, bg: '#e8f0fe' },
-  { key: 'venues' as const, label: '场地', icon: OfficeBuilding, bg: '#fff5e6' },
-  { key: 'devices' as const, label: '设备', icon: Monitor, bg: '#f3e8ff' },
-  { key: 'bookings' as const, label: '预约', icon: Tickets, bg: '#e6fffb' }
+  { key: 'pendingReview' as const, label: '待审核预约', icon: Warning, bg: '#fff5e6' },
+  { key: 'todayLive' as const, label: '今日直播', icon: Calendar, bg: '#e8f0fe' },
+  { key: 'availableVenues' as const, label: '可用场地', icon: OfficeBuilding, bg: '#e8f4e4' },
+  { key: 'availableDevices' as const, label: '可用设备', icon: Monitor, bg: '#f3e8ff' },
+  { key: 'bookings' as const, label: '预约总数', icon: Tickets, bg: '#e6fffb' },
+  { key: 'farmers' as const, label: '农户', icon: Avatar, bg: '#f7faf5' }
 ])
 
 onMounted(async () => {
