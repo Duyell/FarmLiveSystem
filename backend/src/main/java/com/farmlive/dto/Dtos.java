@@ -149,6 +149,44 @@ public final class Dtos {
     ) {
     }
 
+    // ---------------- notification ----------------
+
+    public record NotificationView(
+            Long id,
+            String type,
+            String channel,
+            String title,
+            String content,
+            String status,
+            int retryCount,
+            String sentAt,
+            boolean read,
+            String createdAt
+    ) {
+    }
+
+    public record TemplateView(
+            Long id,
+            String code,
+            String name,
+            String type,
+            String titleTemplate,
+            String contentTemplate,
+            boolean enabled,
+            String updatedAt
+    ) {
+    }
+
+    public record TemplateRequest(
+            @NotBlank(message = "模板编码不能为空") String code,
+            @NotBlank(message = "模板名称不能为空") String name,
+            @NotBlank(message = "通知类型不能为空") String type,
+            @NotBlank(message = "标题模板不能为空") String titleTemplate,
+            @NotBlank(message = "内容模板不能为空") String contentTemplate,
+            Boolean enabled
+    ) {
+    }
+
     public record QueueView(
             Long id,
             String queueNo,

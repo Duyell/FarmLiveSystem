@@ -136,6 +136,8 @@ npm run build
 | 预约审核 | `GET /api/live/bookings`、`POST /api/live/bookings/{id}/review` |
 | 排队候补 | `POST/GET /api/farmer/queues`、`POST /api/farmer/queues/{id}/confirm`、`POST /api/farmer/queues/{id}/abandon` |
 | 队列管理 | `GET /api/live/queues`、`POST /api/live/queues/{id}/close` |
+| 通知 | `GET /api/notifications`、`POST /api/notifications/{id}/read` |
+| 通知管理 | `GET /api/live/notifications`、`POST /api/live/notifications/{id}/retry`、`/api/live/notification-templates` |
 | 修改密码 | `POST /api/auth/change-password` |
 | 退出 | `POST /api/auth/logout` |
 | 工作台 | `GET /api/admin/dashboard` |

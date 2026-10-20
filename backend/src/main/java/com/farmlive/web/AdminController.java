@@ -10,6 +10,7 @@ import com.farmlive.dto.Dtos;
 import com.farmlive.repo.AdminRepository;
 import com.farmlive.repo.RegionRepository;
 import com.farmlive.repo.RegionRepository.RegionRow;
+import com.farmlive.service.NotificationService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,12 +33,14 @@ public class AdminController {
     private final AdminRepository repository;
     private final PasswordService passwordService;
     private final RegionRepository regionRepository;
+    private final NotificationService notificationService;
 
     public AdminController(AdminRepository repository, PasswordService passwordService,
-                           RegionRepository regionRepository) {
+                           RegionRepository regionRepository, NotificationService notificationService) {
         this.repository = repository;
         this.passwordService = passwordService;
         this.regionRepository = regionRepository;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/dashboard")
@@ -293,13 +296,18 @@ public class AdminController {
     public ApiResponse<Dtos.DeviceView> updateDevice(
             @PathVariable Long id,
             @Valid @RequestBody Dtos.DeviceRequest request) {
-        repository.findDevice(id).orElseThrow(() -> BusinessException.notFound("设备不存在"));
+        Dtos.DeviceView existing = repository.findDevice(id)
+                .orElseThrow(() -> BusinessException.notFound("设备不存在"));
         repository.findVenue(request.venueId())
                 .orElseThrow(() -> BusinessException.badRequest("所属场地不存在"));
         String status = normalizeResourceStatus(request.status());
         LocalDate calibration = parseDate(request.calibrationDate());
         repository.updateDevice(id, request.name().trim(), trimToNull(request.model()),
                 request.venueId(), status, calibration);
+        if (!"maintenance".equals(existing.status()) && !"disabled".equals(existing.status())
+                && ("maintenance".equals(status) || "disabled".equals(status))) {
+            notificationService.notifyDeviceFault(id, existing.name());
+        }
         return ApiResponse.ok(repository.findDevice(id)
                 .orElseThrow(() -> BusinessException.notFound("设备不存在")));
     }

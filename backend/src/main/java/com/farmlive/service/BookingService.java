@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -25,10 +26,13 @@ public class BookingService {
 
     private final BookingRepository repository;
     private final QueueService queueService;
+    private final NotificationService notificationService;
 
-    public BookingService(BookingRepository repository, QueueService queueService) {
+    public BookingService(BookingRepository repository, QueueService queueService,
+                          NotificationService notificationService) {
         this.repository = repository;
         this.queueService = queueService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -99,8 +103,24 @@ public class BookingService {
         } else {
             throw BusinessException.badRequest("审核结果只能是 approve 或 reject");
         }
-        return repository.findViewById(booking.id())
+        Dtos.BookingView view = repository.findViewById(booking.id())
                 .orElseThrow(() -> BusinessException.notFound("预约不存在"));
+        notifyReviewResult(view);
+        return view;
+    }
+
+    private void notifyReviewResult(Dtos.BookingView view) {
+        boolean approved = "approved".equals(view.status());
+        notificationService.notifyFarmer(view.farmerId(), "review",
+                approved ? "review_approved" : "review_rejected",
+                Map.of(
+                        "farmerName", view.farmerName() == null ? "" : view.farmerName(),
+                        "topic", view.topic() == null ? "" : view.topic(),
+                        "startTime", view.startTime() == null ? "" : view.startTime(),
+                        "venueName", view.venueName() == null ? "" : view.venueName(),
+                        "reviewComment", view.reviewComment() == null ? "无" : view.reviewComment(),
+                        "recommendedTime", view.recommendedTime() == null ? "无" : view.recommendedTime()
+                ));
     }
 
     @Transactional

@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -27,10 +28,13 @@ public class QueueService {
 
     private final QueueRepository queueRepository;
     private final BookingRepository bookingRepository;
+    private final NotificationService notificationService;
 
-    public QueueService(QueueRepository queueRepository, BookingRepository bookingRepository) {
+    public QueueService(QueueRepository queueRepository, BookingRepository bookingRepository,
+                        NotificationService notificationService) {
         this.queueRepository = queueRepository;
         this.bookingRepository = bookingRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -103,6 +107,8 @@ public class QueueService {
         queueRepository.shiftPositions(row.venueId(), row.slotStart(), row.position());
         if ("candidate".equals(row.status())) {
             promoteNext(row.venueId(), row.slotStart());
+        } else {
+            notifyNewFirstQueued(row.venueId(), row.slotStart());
         }
         return queueRepository.findViewById(row.id())
                 .orElseThrow(() -> BusinessException.notFound("排队不存在"));
@@ -192,8 +198,32 @@ public class QueueService {
         if (queueRepository.pickAvailableDevice(venueId, slotStart, slotStart.plusHours(4)).isEmpty()) {
             return;
         }
+        queueRepository.firstQueued(venueId, slotStart).ifPresent(first -> {
+            queueRepository.promoteToCandidate(first.id(), slotStart.minusHours(1));
+            queueRepository.findViewById(first.id()).ifPresent(view -> notificationService.notifyFarmer(
+                    view.farmerId(), "candidate", "candidate_promoted",
+                    Map.of(
+                            "farmerName", view.farmerName() == null ? "" : view.farmerName(),
+                            "venueName", view.venueName() == null ? "" : view.venueName(),
+                            "startTime", view.slotStart() == null ? "" : view.slotStart(),
+                            "deadline", view.candidateDeadline() == null ? "" : view.candidateDeadline()
+                    )));
+        });
+    }
+
+    /**
+     * 顺延后通知新的队首当前顺位。
+     */
+    private void notifyNewFirstQueued(Long venueId, LocalDateTime slotStart) {
         queueRepository.firstQueued(venueId, slotStart).ifPresent(first ->
-                queueRepository.promoteToCandidate(first.id(), slotStart.minusHours(1)));
+                queueRepository.findViewById(first.id()).ifPresent(view -> notificationService.notifyFarmer(
+                        view.farmerId(), "queue", "queue_position",
+                        Map.of(
+                                "farmerName", view.farmerName() == null ? "" : view.farmerName(),
+                                "venueName", view.venueName() == null ? "" : view.venueName(),
+                                "startTime", view.slotStart() == null ? "" : view.slotStart(),
+                                "position", String.valueOf(view.position())
+                        ))));
     }
 
     /**
@@ -206,6 +236,7 @@ public class QueueService {
             queueRepository.updateStatus(row.id(), "expired");
             queueRepository.shiftPositions(row.venueId(), row.slotStart(), row.position());
             promoteNext(row.venueId(), row.slotStart());
+            notifyNewFirstQueued(row.venueId(), row.slotStart());
         }
     }
 

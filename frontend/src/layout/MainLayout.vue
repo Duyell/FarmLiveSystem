@@ -77,14 +77,14 @@ const menuByRole: Record<string, MenuItem[]> = {
     { path: '/basic-info', title: '基础信息管理', icon: Files },
     { path: '/accounts', title: '权限管理', icon: Lock },
     { path: '/live/queues', title: '直播排队与候补', icon: Sort },
-    { path: '/todo?name=通知管理', title: '通知管理', icon: Bell },
+    { path: '/live/notifications', title: '通知管理', icon: Bell },
     { path: '/todo?name=数据统计分析', title: '数据统计分析', icon: TrendCharts },
     { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
   ],
   live_admin: [
     { path: '/bookings', title: '直播预约管理', icon: Calendar },
     { path: '/live/queues', title: '直播排队与候补', icon: Sort },
-    { path: '/todo?name=通知管理', title: '通知管理', icon: Bell },
+    { path: '/live/notifications', title: '通知管理', icon: Bell },
     { path: '/todo?name=数据统计分析', title: '数据统计分析', icon: TrendCharts },
     { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
   ],
@@ -92,11 +92,12 @@ const menuByRole: Record<string, MenuItem[]> = {
     { path: '/farmer/bookings/new', title: '直播预约管理', icon: Calendar },
     { path: '/farmer/bookings', title: '我的预约', icon: List },
     { path: '/farmer/queues', title: '直播排队与候补', icon: Sort },
-    { path: '/todo?name=通知管理', title: '通知管理', icon: Bell },
+    { path: '/notifications', title: '通知管理', icon: Bell },
     { path: '/todo?name=数据统计分析', title: '数据统计分析', icon: TrendCharts },
     { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
   ],
   data_viewer: [
+    { path: '/notifications', title: '通知管理', icon: Bell },
     { path: '/todo?name=数据统计分析', title: '数据统计分析', icon: TrendCharts },
     { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
   ]
@@ -110,7 +111,9 @@ const pageTitleByPath: Record<string, string> = {
   '/farmer/bookings': '我的预约',
   '/farmer/bookings/new': '直播预约提交',
   '/farmer/queues': '直播排队与候补',
-  '/live/queues': '直播排队与候补'
+  '/live/queues': '直播排队与候补',
+  '/notifications': '通知管理',
+  '/live/notifications': '通知管理'
 }
 
 const pageSubtitleByPath: Record<string, string> = {
@@ -121,7 +124,9 @@ const pageSubtitleByPath: Record<string, string> = {
   '/farmer/bookings': '查看和管理您的直播预约状态',
   '/farmer/bookings/new': '提交直播预约信息，等待管理员审核',
   '/farmer/queues': '时段已满可加入排队，场地释放后自动升级候补',
-  '/live/queues': '查看各场地时段排队情况，必要时关闭队列'
+  '/live/queues': '查看各场地时段排队情况，必要时关闭队列',
+  '/notifications': '查看发给您的事件通知',
+  '/live/notifications': '查看发送记录、重试失败短信并维护通知模板'
 }
 
 const route = useRoute()

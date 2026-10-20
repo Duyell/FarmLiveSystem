@@ -27,6 +27,8 @@ const router = createRouter({
         { path: 'farmer/bookings/new', name: 'farmer-booking-new', component: () => import('../views/NewBookingView.vue'), meta: { roles: ['farmer'] } },
         { path: 'farmer/queues', name: 'farmer-queues', component: () => import('../views/FarmerQueuesView.vue'), meta: { roles: ['farmer'] } },
         { path: 'live/queues', name: 'live-queues', component: () => import('../views/LiveQueuesView.vue'), meta: { roles: ['system_admin', 'live_admin'] } },
+        { path: 'notifications', name: 'notifications', component: () => import('../views/NotificationsView.vue') },
+        { path: 'live/notifications', name: 'live-notifications', component: () => import('../views/LiveNotificationsView.vue'), meta: { roles: ['system_admin', 'live_admin'] } },
         { path: 'todo', name: 'todo', component: () => import('../views/NotImplementedView.vue') },
         { path: 'farmers', redirect: '/basic-info' },
         { path: 'venues', redirect: '/basic-info' },
