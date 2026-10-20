@@ -144,7 +144,7 @@ function statusTag(value: string) {
 async function load() {
   loading.value = true
   try {
-    const result = await get<PageResult<Venue>>('/admin/venues', {
+    const result = await get<PageResult<Venue>>('/live/venues', {
       keyword: keyword.value,
       countyCode: filterCountyCode.value,
       page: page.value,
@@ -218,10 +218,10 @@ async function save() {
       status: form.status
     }
     if (isEdit.value) {
-      await put(`/admin/venues/${form.id}`, payload)
+      await put(`/live/venues/${form.id}`, payload)
       ElMessage.success('场地已更新')
     } else {
-      await post('/admin/venues', payload)
+      await post('/live/venues', payload)
       ElMessage.success('场地已创建')
     }
     dialogVisible.value = false
@@ -236,7 +236,7 @@ async function save() {
 async function remove(row: Venue) {
   try {
     await ElMessageBox.confirm(`确定删除场地「${row.name}」吗？`, '删除确认', { type: 'warning' })
-    await del(`/admin/venues/${row.id}`)
+    await del(`/live/venues/${row.id}`)
     ElMessage.success('场地已删除')
     await load()
   } catch (error) {

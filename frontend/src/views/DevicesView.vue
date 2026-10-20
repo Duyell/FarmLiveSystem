@@ -130,7 +130,7 @@ function statusTag(value: string) {
 async function load() {
   loading.value = true
   try {
-    const result = await get<PageResult<Device>>('/admin/devices', {
+    const result = await get<PageResult<Device>>('/live/devices', {
       keyword: keyword.value,
       page: page.value,
       size: size.value
@@ -146,7 +146,7 @@ async function load() {
 
 async function loadVenues() {
   try {
-    const result = await get<PageResult<Venue>>('/admin/venues', { page: 1, size: 100 })
+    const result = await get<PageResult<Venue>>('/live/venues', { page: 1, size: 100 })
     venues.value = result.items
   } catch (error) {
     ElMessage.error((error as Error).message)
@@ -197,10 +197,10 @@ async function save() {
       calibrationDate: form.calibrationDate || null
     }
     if (isEdit.value) {
-      await put(`/admin/devices/${form.id}`, payload)
+      await put(`/live/devices/${form.id}`, payload)
       ElMessage.success('设备已更新')
     } else {
-      await post('/admin/devices', payload)
+      await post('/live/devices', payload)
       ElMessage.success('设备已创建')
     }
     dialogVisible.value = false
@@ -215,7 +215,7 @@ async function save() {
 async function remove(row: Device) {
   try {
     await ElMessageBox.confirm(`确定删除设备「${row.name}」吗？`, '删除确认', { type: 'warning' })
-    await del(`/admin/devices/${row.id}`)
+    await del(`/live/devices/${row.id}`)
     ElMessage.success('设备已删除')
     await load()
   } catch (error) {

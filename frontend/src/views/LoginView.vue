@@ -5,20 +5,7 @@
         <div class="brand-mark">助</div>
         <div>
           <h1>助农直播管理系统</h1>
-          <p>请选择角色并登录</p>
-        </div>
-      </div>
-
-      <div class="role-list">
-        <div
-          v-for="role in roles"
-          :key="role.code"
-          class="role-item"
-          :class="{ active: form.roleCode === role.code }"
-          @click="form.roleCode = role.code"
-        >
-          <div class="role-name">{{ role.name }}</div>
-          <div class="role-desc">{{ role.desc }}</div>
+          <p>请输入账号和密码登录</p>
         </div>
       </div>
 
@@ -48,17 +35,9 @@ import { ElMessage } from 'element-plus'
 import { post } from '../api/http'
 import { saveAuth, type LoginResult } from '../api/auth'
 
-const roles = [
-  { code: 'system_admin', name: '系统管理员', desc: '账号、农户、场地、设备与预约审核' },
-  { code: 'live_admin', name: '直播管理员', desc: '预约审核、排队与销售管理' },
-  { code: 'farmer', name: '农户', desc: '预约直播、查看排队与通知' },
-  { code: 'data_viewer', name: '数据统计员', desc: '统计查看与导出' }
-]
-
 const router = useRouter()
 const loading = ref(false)
 const form = reactive({
-  roleCode: 'system_admin',
   username: 'admin',
   password: ''
 })
@@ -79,8 +58,7 @@ async function submit() {
   try {
     const result = await post<LoginResult>('/auth/login', {
       username: form.username.trim(),
-      password: form.password,
-      roleCode: form.roleCode
+      password: form.password
     })
     saveAuth(result.token, result.user)
     if (result.user.mustChangePassword) {
@@ -146,47 +124,6 @@ async function submit() {
   margin: 5px 0 0;
   color: #7a8699;
   font-size: 13px;
-}
-
-.role-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.role-item {
-  padding: 10px 14px;
-  border: 1px solid #e4e9f0;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, transform 0.15s;
-}
-
-.role-item:hover {
-  border-color: #a9c6ff;
-  background: #f7faff;
-}
-
-.role-item.active {
-  border-color: #3b6cff;
-  background: #ecf2ff;
-}
-
-.role-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1f2d3d;
-}
-
-.role-item.active .role-name {
-  color: #3b6cff;
-}
-
-.role-desc {
-  font-size: 12px;
-  color: #7a8699;
-  margin-top: 2px;
 }
 
 .login-button {

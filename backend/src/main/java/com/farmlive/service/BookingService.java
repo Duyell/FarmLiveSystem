@@ -193,6 +193,19 @@ public class BookingService {
                 .toList();
     }
 
+    private void validateRecommendedSlot(BookingRepository.BookingRow booking, LocalDateTime recommended) {
+        long minutes = Duration.between(booking.startTime(), booking.endTime()).toMinutes();
+        if (minutes <= 0) {
+            throw BusinessException.badRequest("原预约时段不正确");
+        }
+        LocalDateTime recommendedEnd = recommended.plusMinutes(minutes);
+        validateSlot(recommended, recommendedEnd);
+        if (repository.venueHasOverlap(booking.venueId(), recommended, recommendedEnd)
+                || repository.deviceHasOverlap(booking.deviceId(), recommended, recommendedEnd)) {
+            throw BusinessException.conflict("BOOKING_CONFLICT", "推荐时间已被占用，请换一个时间");
+        }
+    }
+
     private void validateSlot(LocalDateTime start, LocalDateTime end) {
         if (start.getMinute() != 0 || start.getSecond() != 0
                 || end.getMinute() != 0 || end.getSecond() != 0) {

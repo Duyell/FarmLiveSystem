@@ -21,7 +21,7 @@ const router = createRouter({
         { path: '', redirect: '/dashboard' },
         { path: 'dashboard', name: 'dashboard', component: () => import('../views/DashboardView.vue'), meta: { roles: ['system_admin'] } },
         { path: 'bookings', name: 'live-bookings', component: () => import('../views/LiveBookingsView.vue'), meta: { roles: ['system_admin', 'live_admin'] } },
-        { path: 'basic-info', name: 'basic-info', component: () => import('../views/BasicInfoView.vue'), meta: { roles: ['system_admin'] } },
+        { path: 'basic-info', name: 'basic-info', component: () => import('../views/BasicInfoView.vue'), meta: { roles: ['system_admin', 'live_admin'] } },
         { path: 'accounts', name: 'accounts', component: () => import('../views/AccountsView.vue'), meta: { roles: ['system_admin'] } },
         { path: 'farmer/bookings', name: 'farmer-bookings', component: () => import('../views/FarmerBookingsView.vue'), meta: { roles: ['farmer'] } },
         { path: 'farmer/bookings/new', name: 'farmer-booking-new', component: () => import('../views/NewBookingView.vue'), meta: { roles: ['farmer'] } },

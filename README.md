@@ -130,7 +130,8 @@ npm run build
 |---|---|
 | 区域字典 | `GET /api/regions` |
 | 可用资源 | `GET /api/resources/available` |
-| 登录 | `POST /api/auth/login`（可选 `roleCode`，校验与账号角色一致） |
+| 直播管理员基础数据 | `GET/POST/PUT/DELETE /api/live/farmers`、`/api/live/venues`、`/api/live/devices` |
+| 登录 | `POST /api/auth/login` |
 | 当前用户 | `GET /api/auth/me` |
 | 农户预约 | `POST /api/farmer/bookings`、`GET /api/farmer/bookings`、`POST /api/farmer/bookings/{id}/cancel` |
 | 预约审核 | `GET /api/live/bookings`、`POST /api/live/bookings/{id}/review` |

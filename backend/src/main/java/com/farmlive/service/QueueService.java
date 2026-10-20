@@ -199,7 +199,7 @@ public class QueueService {
             return;
         }
         queueRepository.firstQueued(venueId, slotStart).ifPresent(first -> {
-            queueRepository.promoteToCandidate(first.id(), slotStart.minusHours(1));
+            queueRepository.promoteToCandidate(first.id(), slotStart.minusHours(24));
             queueRepository.findViewById(first.id()).ifPresent(view -> notificationService.notifyFarmer(
                     view.farmerId(), "candidate", "candidate_promoted",
                     "candidate:" + view.id(),
@@ -239,6 +239,17 @@ public class QueueService {
             queueRepository.shiftPositions(row.venueId(), row.slotStart(), row.position());
             promoteNext(row.venueId(), row.slotStart(), row.slotEnd());
             notifyNewFirstQueued(row.venueId(), row.slotStart());
+        }
+    }
+
+    /**
+     * 到开播前 24 小时，仍未转正的排队统一关闭，不再发起候补。
+     */
+    @Scheduled(fixedDelay = 60_000)
+    @Transactional
+    public void closeQueuesAtDeadline() {
+        for (QueueRepository.QueueGroup group : queueRepository.groupsToCloseAtDeadline()) {
+            queueRepository.closeGroup(group.venueId(), group.slotStart());
         }
     }
 

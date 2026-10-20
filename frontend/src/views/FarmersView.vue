@@ -145,7 +145,7 @@ function qualificationTag(value: string) {
 async function load() {
   loading.value = true
   try {
-    const result = await get<PageResult<Farmer>>('/admin/farmers', {
+    const result = await get<PageResult<Farmer>>('/live/farmers', {
       keyword: keyword.value,
       countyCode: filterCountyCode.value,
       page: page.value,
@@ -215,10 +215,10 @@ async function save() {
       status: form.status
     }
     if (isEdit.value) {
-      await put(`/admin/farmers/${form.id}`, payload)
+      await put(`/live/farmers/${form.id}`, payload)
       ElMessage.success('农户已更新')
     } else {
-      await post('/admin/farmers', payload)
+      await post('/live/farmers', payload)
       ElMessage.success('农户已创建')
     }
     dialogVisible.value = false
@@ -233,7 +233,7 @@ async function save() {
 async function remove(row: Farmer) {
   try {
     await ElMessageBox.confirm(`确定删除农户「${row.name}」吗？`, '删除确认', { type: 'warning' })
-    await del(`/admin/farmers/${row.id}`)
+    await del(`/live/farmers/${row.id}`)
     ElMessage.success('农户已删除')
     await load()
   } catch (error) {

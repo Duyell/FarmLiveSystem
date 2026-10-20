@@ -41,6 +41,9 @@ public class QueueRepository {
     ) {
     }
 
+    public record QueueGroup(Long venueId, LocalDateTime slotStart) {
+    }
+
     private static final String VIEW_SELECT = """
             SELECT q.id, q.queue_no, q.farmer_id, f.name AS farmer_name, f.farmer_no,
                    q.venue_id, v.name AS venue_name,
@@ -140,6 +143,22 @@ public class QueueRepository {
                 UPDATE queue_ticket SET status = 'closed'
                 WHERE venue_id = ? AND slot_start = ? AND status IN ('queued', 'candidate')
                 """, venueId, Timestamp.valueOf(slotStart));
+    }
+
+    /**
+     * 到开播前 24 小时仍未转正的队列组，统一关闭。
+     */
+    public List<QueueGroup> groupsToCloseAtDeadline() {
+        return jdbc.query("""
+                SELECT venue_id, slot_start
+                FROM queue_ticket
+                WHERE status IN ('queued', 'candidate')
+                  AND slot_start <= DATE_ADD(NOW(), INTERVAL 24 HOUR)
+                GROUP BY venue_id, slot_start
+                """, (rs, rowNum) -> new QueueGroup(
+                rs.getLong("venue_id"),
+                rs.getTimestamp("slot_start").toLocalDateTime()
+        ));
     }
 
     // ---------------- 查询 ----------------

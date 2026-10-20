@@ -165,7 +165,7 @@ async function load() {
 async function loadMeta() {
   try {
     roles.value = await get<Role[]>('/admin/roles')
-    const result = await get<PageResult<Farmer>>('/admin/farmers', { page: 1, size: 100 })
+    const result = await get<PageResult<Farmer>>('/live/farmers', { page: 1, size: 100 })
     farmers.value = result.items
   } catch (error) {
     ElMessage.error((error as Error).message)

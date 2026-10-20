@@ -93,6 +93,7 @@ const menuByRole: Record<string, MenuItem[]> = {
   ],
   live_admin: [
     { path: '/bookings', title: '直播预约管理', icon: Calendar },
+    { path: '/basic-info', title: '基础信息管理', icon: Files },
     { path: '/live/queues', title: '直播排队与候补', icon: Sort },
     { path: '/live/notifications', title: '通知管理', icon: Bell },
     { path: '/todo?name=数据统计分析', title: '数据统计分析', icon: TrendCharts },
