@@ -7,6 +7,7 @@ export interface NotificationItem {
   title: string
   content: string
   status: string
+  smsStatus: string | null
   retryCount: number
   sentAt: string | null
   read: boolean
@@ -49,6 +50,10 @@ export async function listMyNotifications(params: {
 
 export async function markNotificationRead(id: number): Promise<void> {
   await post(`/notifications/${id}/read`)
+}
+
+export async function getUnreadCount(): Promise<number> {
+  return get<number>('/notifications/unread-count')
 }
 
 export async function listAllNotifications(params: {

@@ -158,6 +158,7 @@ public final class Dtos {
             String title,
             String content,
             String status,
+            String smsStatus,
             int retryCount,
             String sentAt,
             boolean read,

@@ -44,4 +44,10 @@ public class NotificationController {
         notificationService.markRead(user.id(), id);
         return ApiResponse.ok();
     }
+
+    @GetMapping("/unread-count")
+    public ApiResponse<Long> unreadCount(
+            @RequestAttribute(AuthInterceptor.CURRENT_USER) CurrentUser user) {
+        return ApiResponse.ok(notificationService.unreadCount(user.id()));
+    }
 }

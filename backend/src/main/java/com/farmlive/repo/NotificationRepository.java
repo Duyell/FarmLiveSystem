@@ -26,6 +26,13 @@ public class NotificationRepository {
             FROM notification
             """;
 
+    private static final String MY_VIEW_SELECT = """
+            SELECT n.id, n.type, n.channel, n.title, n.content, n.status, n.retry_count,
+                   n.sent_at, n.read_at, n.created_at, s.status AS sms_status
+            FROM notification n
+            LEFT JOIN notification s ON s.event_key = n.event_key AND s.channel = 'sms'
+            """;
+
     private final JdbcTemplate jdbc;
 
     public NotificationRepository(JdbcTemplate jdbc) {
@@ -48,6 +55,22 @@ public class NotificationRepository {
             rs.getString("title"),
             rs.getString("content"),
             rs.getString("status"),
+            null,
+            rs.getInt("retry_count"),
+            rs.getTimestamp("sent_at") == null
+                    ? null : rs.getTimestamp("sent_at").toLocalDateTime().format(QueueRepository.DATE_TIME),
+            rs.getTimestamp("read_at") != null,
+            rs.getTimestamp("created_at").toLocalDateTime().format(QueueRepository.DATE_TIME)
+    );
+
+    private final RowMapper<Dtos.NotificationView> myViewMapper = (rs, rowNum) -> new Dtos.NotificationView(
+            rs.getLong("id"),
+            rs.getString("type"),
+            rs.getString("channel"),
+            rs.getString("title"),
+            rs.getString("content"),
+            rs.getString("status"),
+            rs.getString("sms_status"),
             rs.getInt("retry_count"),
             rs.getTimestamp("sent_at") == null
                     ? null : rs.getTimestamp("sent_at").toLocalDateTime().format(QueueRepository.DATE_TIME),
@@ -63,19 +86,20 @@ public class NotificationRepository {
             rs.getInt("retry_count")
     );
 
-    public Long insert(Long accountId, String type, String channel, String title, String content) {
+    public Long insert(Long accountId, String type, String eventKey, String channel, String title, String content) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbc.update(con -> {
             PreparedStatement ps = con.prepareStatement("""
-                    INSERT INTO notification (account_id, type, channel, title, content, status, next_retry_at)
-                    VALUES (?, ?, ?, ?, ?, 'pending', ?)
+                    INSERT INTO notification (account_id, type, event_key, channel, title, content, status, next_retry_at)
+                    VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
                     """, Statement.RETURN_GENERATED_KEYS);
             ps.setLong(1, accountId);
             ps.setString(2, type);
-            ps.setString(3, channel);
-            ps.setString(4, title);
-            ps.setString(5, content);
-            ps.setTimestamp(6, Timestamp.valueOf(LocalDateTime.now()));
+            ps.setString(3, eventKey);
+            ps.setString(4, channel);
+            ps.setString(5, title);
+            ps.setString(6, content);
+            ps.setTimestamp(7, Timestamp.valueOf(LocalDateTime.now()));
             return ps;
         }, keyHolder);
         Number key = keyHolder.getKey();
@@ -114,15 +138,25 @@ public class NotificationRepository {
                 rowMapper, id).stream().findFirst();
     }
 
+    /**
+     * 我的通知：只取站内记录（每事件一条），并关联同事件短信的送达状态。
+     */
     public PageResult<Dtos.NotificationView> listByAccount(Long accountId, String type, int page, int size) {
-        StringBuilder where = new StringBuilder(" WHERE account_id = ? ");
+        StringBuilder where = new StringBuilder(" WHERE n.account_id = ? AND n.channel = 'in_app' ");
         List<Object> args = new ArrayList<>();
         args.add(accountId);
         if (type != null && !type.isBlank()) {
-            where.append(" AND type = ? ");
+            where.append(" AND n.type = ? ");
             args.add(type.trim());
         }
-        return page(VIEW_SELECT + where + " ORDER BY id DESC", args, page, size);
+        String sql = MY_VIEW_SELECT + where + " ORDER BY n.id DESC LIMIT ? OFFSET ?";
+        String countSql = "SELECT COUNT(*) FROM notification n" + where;
+        Long total = jdbc.queryForObject(countSql, Long.class, args.toArray());
+        List<Object> pageArgs = new ArrayList<>(args);
+        pageArgs.add(size);
+        pageArgs.add((page - 1) * size);
+        List<Dtos.NotificationView> items = jdbc.query(sql, myViewMapper, pageArgs.toArray());
+        return new PageResult<>(items, total == null ? 0 : total, page, size);
     }
 
     public PageResult<Dtos.NotificationView> listAll(String type, String channel, String status, int page, int size) {
@@ -146,6 +180,14 @@ public class NotificationRepository {
     public void markRead(Long id, Long accountId) {
         jdbc.update("UPDATE notification SET read_at = NOW() WHERE id = ? AND account_id = ? AND read_at IS NULL",
                 id, accountId);
+    }
+
+    public long unreadCount(Long accountId) {
+        Long count = jdbc.queryForObject("""
+                SELECT COUNT(*) FROM notification
+                WHERE account_id = ? AND channel = 'in_app' AND read_at IS NULL
+                """, Long.class, accountId);
+        return count == null ? 0 : count;
     }
 
     public Optional<Long> findAccountIdByFarmerId(Long farmerId) {

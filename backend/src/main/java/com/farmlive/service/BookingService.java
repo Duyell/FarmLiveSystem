@@ -113,6 +113,7 @@ public class BookingService {
         boolean approved = "approved".equals(view.status());
         notificationService.notifyFarmer(view.farmerId(), "review",
                 approved ? "review_approved" : "review_rejected",
+                "review:" + view.id(),
                 Map.of(
                         "farmerName", view.farmerName() == null ? "" : view.farmerName(),
                         "topic", view.topic() == null ? "" : view.topic(),

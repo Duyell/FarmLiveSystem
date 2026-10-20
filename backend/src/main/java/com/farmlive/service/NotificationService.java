@@ -42,9 +42,10 @@ public class NotificationService {
 
     /**
      * 按模板发送事件通知：站内即时送达，短信走模拟网关（可失败重试）。
+     * eventKey 用于关联同一事件的站内/短信记录（我的通知按事件合并展示）。
      * 渲染失败（变量缺失）跳过发送，不影响调用方事务。
      */
-    public void sendEvent(Long accountId, String type, String templateCode, Map<String, String> vars) {
+    public void sendEvent(Long accountId, String type, String templateCode, String eventKey, Map<String, String> vars) {
         if (accountId == null) return;
         try {
             var template = templateRepository.findByCode(templateCode)
@@ -56,9 +57,9 @@ public class NotificationService {
             }
             String title = render(template.titleTemplate(), vars, templateCode);
             String content = render(template.contentTemplate(), vars, templateCode);
-            Long inAppId = repository.insert(accountId, type, "in_app", title, content);
+            Long inAppId = repository.insert(accountId, type, eventKey, "in_app", title, content);
             repository.markSent(inAppId);
-            Long smsId = repository.insert(accountId, type, "sms", title, content);
+            Long smsId = repository.insert(accountId, type, eventKey, "sms", title, content);
             attemptSms(smsId);
         } catch (Exception ex) {
             log.warn("发送通知失败（不影响主业务）: {}", ex.getMessage());
@@ -97,7 +98,8 @@ public class NotificationService {
     @Scheduled(fixedDelay = 60_000)
     public void scanReminders() {
         for (NotificationRepository.EventTarget target : repository.reminderCandidates()) {
-            sendEvent(target.accountId(), "reminder", "booking_reminder", Map.of(
+            sendEvent(target.accountId(), "reminder", "booking_reminder",
+                    "reminder:" + target.bookingNo(), Map.of(
                     "farmerName", target.farmerName(),
                     "topic", target.topic(),
                     "startTime", target.startTime(),
@@ -112,7 +114,8 @@ public class NotificationService {
      */
     public void notifyDeviceFault(Long deviceId, String deviceName) {
         for (NotificationRepository.EventTarget target : repository.deviceFaultTargets(deviceId)) {
-            sendEvent(target.accountId(), "device_fault", "device_fault", Map.of(
+            sendEvent(target.accountId(), "device_fault", "device_fault",
+                    "device_fault:" + target.bookingNo(), Map.of(
                     "farmerName", target.farmerName(),
                     "topic", target.topic(),
                     "startTime", target.startTime(),
@@ -126,9 +129,9 @@ public class NotificationService {
     /**
      * 按农户档案发送（自动解析农户登录账号；未关联账号则跳过）。
      */
-    public void notifyFarmer(Long farmerId, String type, String templateCode, Map<String, String> vars) {
+    public void notifyFarmer(Long farmerId, String type, String templateCode, String eventKey, Map<String, String> vars) {
         Long accountId = repository.findAccountIdByFarmerId(farmerId).orElse(null);
-        sendEvent(accountId, type, templateCode, vars);
+        sendEvent(accountId, type, templateCode, eventKey, vars);
     }
 
     public PageResult<Dtos.NotificationView> listMine(Long accountId, String type, int page, int size) {
@@ -137,6 +140,10 @@ public class NotificationService {
 
     public void markRead(Long accountId, Long id) {
         repository.markRead(id, accountId);
+    }
+
+    public long unreadCount(Long accountId) {
+        return repository.unreadCount(accountId);
     }
 
     public PageResult<Dtos.NotificationView> listAll(String type, String channel, String status, int page, int size) {

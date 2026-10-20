@@ -202,6 +202,7 @@ public class QueueService {
             queueRepository.promoteToCandidate(first.id(), slotStart.minusHours(1));
             queueRepository.findViewById(first.id()).ifPresent(view -> notificationService.notifyFarmer(
                     view.farmerId(), "candidate", "candidate_promoted",
+                    "candidate:" + view.id(),
                     Map.of(
                             "farmerName", view.farmerName() == null ? "" : view.farmerName(),
                             "venueName", view.venueName() == null ? "" : view.venueName(),
@@ -218,6 +219,7 @@ public class QueueService {
         queueRepository.firstQueued(venueId, slotStart).ifPresent(first ->
                 queueRepository.findViewById(first.id()).ifPresent(view -> notificationService.notifyFarmer(
                         view.farmerId(), "queue", "queue_position",
+                        "queue:" + view.id(),
                         Map.of(
                                 "farmerName", view.farmerName() == null ? "" : view.farmerName(),
                                 "venueName", view.venueName() == null ? "" : view.venueName(),

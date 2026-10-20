@@ -1,7 +1,7 @@
 <template>
   <div>
-    <h2 class="page-title">通知管理</h2>
-    <p class="page-subtitle">查看发给您的事件通知，点击可标记已读。</p>
+    <h2 class="page-title">我的通知</h2>
+    <p class="page-subtitle">发给您的事件通知（每个事件一条）；短信送达状态在行内显示，可在站内信上标记已读。</p>
 
     <div class="page-card">
       <div class="page-toolbar">
@@ -21,7 +21,15 @@
           <template #default="{ row }">{{ NOTIFICATION_TYPE[row.type] ?? row.type }}</template>
         </el-table-column>
         <el-table-column prop="title" label="标题" width="150" />
-        <el-table-column prop="content" label="内容" min-width="320" />
+        <el-table-column prop="content" label="内容" min-width="300" />
+        <el-table-column label="短信" width="110">
+          <template #default="{ row }">
+            <el-tag v-if="row.smsStatus === 'sent'" size="small" type="success">已送达</el-tag>
+            <el-tag v-else-if="row.smsStatus === 'failed'" size="small" type="warning">重试中</el-tag>
+            <el-tag v-else-if="row.smsStatus === 'final_failed'" size="small" type="info">发送失败</el-tag>
+            <span v-else class="muted">-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="createdAt" label="时间" width="170" />
         <el-table-column label="操作" width="110" fixed="right">
           <template #default="{ row }">

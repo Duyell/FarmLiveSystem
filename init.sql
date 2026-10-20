@@ -234,6 +234,7 @@ CREATE TABLE IF NOT EXISTS notification (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   account_id BIGINT NOT NULL,
   type VARCHAR(30) NOT NULL,
+  event_key VARCHAR(80) NULL COMMENT '事件关联键，同事件的双渠道记录共享',
   channel VARCHAR(20) NOT NULL,
   title VARCHAR(120) NOT NULL,
   content VARCHAR(1000) NOT NULL,
@@ -246,7 +247,8 @@ CREATE TABLE IF NOT EXISTS notification (
   CONSTRAINT fk_notification_account FOREIGN KEY (account_id) REFERENCES account(id),
   INDEX idx_notification_account (account_id, status),
   INDEX idx_notification_type (type),
-  INDEX idx_notification_retry (status, next_retry_at)
+  INDEX idx_notification_retry (status, next_retry_at),
+  INDEX idx_notification_event (event_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知，按渠道分别记状态';
 
 -- ============================================================

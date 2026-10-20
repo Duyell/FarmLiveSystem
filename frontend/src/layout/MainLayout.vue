@@ -33,9 +33,18 @@
           <div class="header-title">{{ pageTitle }}</div>
           <div class="header-sub">{{ pageSubtitle }}</div>
         </div>
-        <el-badge :value="1" class="bell" type="danger">
-          <el-icon :size="18"><Bell /></el-icon>
-        </el-badge>
+        <el-tooltip content="通知中心" placement="bottom">
+          <el-badge
+            :value="unread"
+            :hidden="unread === 0"
+            :max="99"
+            class="bell"
+            type="danger"
+            @click="goNotifications"
+          >
+            <el-icon :size="18"><Bell /></el-icon>
+          </el-badge>
+        </el-tooltip>
       </el-header>
       <el-main class="main">
         <router-view />
@@ -45,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -63,6 +72,7 @@ import {
 } from '@element-plus/icons-vue'
 import { post } from '../api/http'
 import { clearAuth, currentUser } from '../api/auth'
+import { getUnreadCount } from '../api/notifications'
 
 interface MenuItem {
   path: string
@@ -112,7 +122,7 @@ const pageTitleByPath: Record<string, string> = {
   '/farmer/bookings/new': '直播预约提交',
   '/farmer/queues': '直播排队与候补',
   '/live/queues': '直播排队与候补',
-  '/notifications': '通知管理',
+  '/notifications': '我的通知',
   '/live/notifications': '通知管理'
 }
 
@@ -125,13 +135,30 @@ const pageSubtitleByPath: Record<string, string> = {
   '/farmer/bookings/new': '提交直播预约信息，等待管理员审核',
   '/farmer/queues': '时段已满可加入排队，场地释放后自动升级候补',
   '/live/queues': '查看各场地时段排队情况，必要时关闭队列',
-  '/notifications': '查看发给您的事件通知',
+  '/notifications': '发给您的事件通知（每个事件一条，短信状态在行内显示）',
   '/live/notifications': '查看发送记录、重试失败短信并维护通知模板'
 }
 
 const route = useRoute()
 const router = useRouter()
 const user = currentUser()
+const unread = ref(0)
+
+async function loadUnread() {
+  if (!user) return
+  try {
+    unread.value = await getUnreadCount()
+  } catch {
+    // 未读数获取失败不阻塞页面
+  }
+}
+
+function goNotifications() {
+  router.push('/notifications')
+}
+
+watch(() => route.path, loadUnread)
+onMounted(loadUnread)
 
 const menus = computed<MenuItem[]>(() => menuByRole[user?.roleCode ?? ''] ?? [])
 const avatarText = computed(() => (user?.displayName || user?.username || '?').slice(0, 1))
@@ -297,6 +324,11 @@ async function logout() {
 .bell {
   cursor: pointer;
   color: #5c6b7a;
+  transition: color 0.2s;
+}
+
+.bell:hover {
+  color: #2f7d32;
 }
 
 .main {
