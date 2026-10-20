@@ -83,7 +83,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import RegionSelect from '../components/RegionSelect.vue'
 import { currentUser } from '../api/auth'
 import {
@@ -195,7 +195,21 @@ async function submit() {
     ElMessage.success(`预约已提交，单号 ${booking.bookingNo}，等待审核`)
     await router.replace('/farmer/bookings')
   } catch (error) {
-    ElMessage.error((error as Error).message)
+    const message = (error as Error).message || ''
+    if (message.includes('已被占用') || message.includes('已有预约')) {
+      try {
+        await ElMessageBox.confirm(`${message}。是否前往排队页面加入候补？`, '时段已满', {
+          confirmButtonText: '去加入排队',
+          cancelButtonText: '留在本页',
+          type: 'warning'
+        })
+        await router.push('/farmer/queues')
+      } catch {
+        // 用户选择留在本页
+      }
+    } else {
+      ElMessage.error(message)
+    }
   } finally {
     saving.value = false
   }

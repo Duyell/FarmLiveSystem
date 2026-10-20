@@ -134,6 +134,8 @@ npm run build
 | 当前用户 | `GET /api/auth/me` |
 | 农户预约 | `POST /api/farmer/bookings`、`GET /api/farmer/bookings`、`POST /api/farmer/bookings/{id}/cancel` |
 | 预约审核 | `GET /api/live/bookings`、`POST /api/live/bookings/{id}/review` |
+| 排队候补 | `POST/GET /api/farmer/queues`、`POST /api/farmer/queues/{id}/confirm`、`POST /api/farmer/queues/{id}/abandon` |
+| 队列管理 | `GET /api/live/queues`、`POST /api/live/queues/{id}/close` |
 | 修改密码 | `POST /api/auth/change-password` |
 | 退出 | `POST /api/auth/logout` |
 | 工作台 | `GET /api/admin/dashboard` |

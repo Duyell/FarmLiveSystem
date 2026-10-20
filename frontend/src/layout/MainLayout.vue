@@ -76,14 +76,14 @@ const menuByRole: Record<string, MenuItem[]> = {
     { path: '/bookings', title: '直播预约管理', icon: Calendar },
     { path: '/basic-info', title: '基础信息管理', icon: Files },
     { path: '/accounts', title: '权限管理', icon: Lock },
-    { path: '/todo?name=直播排队与候补', title: '直播排队与候补', icon: Sort },
+    { path: '/live/queues', title: '直播排队与候补', icon: Sort },
     { path: '/todo?name=通知管理', title: '通知管理', icon: Bell },
     { path: '/todo?name=数据统计分析', title: '数据统计分析', icon: TrendCharts },
     { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
   ],
   live_admin: [
     { path: '/bookings', title: '直播预约管理', icon: Calendar },
-    { path: '/todo?name=直播排队与候补', title: '直播排队与候补', icon: Sort },
+    { path: '/live/queues', title: '直播排队与候补', icon: Sort },
     { path: '/todo?name=通知管理', title: '通知管理', icon: Bell },
     { path: '/todo?name=数据统计分析', title: '数据统计分析', icon: TrendCharts },
     { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
@@ -91,7 +91,7 @@ const menuByRole: Record<string, MenuItem[]> = {
   farmer: [
     { path: '/farmer/bookings/new', title: '直播预约管理', icon: Calendar },
     { path: '/farmer/bookings', title: '我的预约', icon: List },
-    { path: '/todo?name=直播排队与候补', title: '直播排队与候补', icon: Sort },
+    { path: '/farmer/queues', title: '直播排队与候补', icon: Sort },
     { path: '/todo?name=通知管理', title: '通知管理', icon: Bell },
     { path: '/todo?name=数据统计分析', title: '数据统计分析', icon: TrendCharts },
     { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
@@ -108,7 +108,9 @@ const pageTitleByPath: Record<string, string> = {
   '/basic-info': '基础信息管理',
   '/accounts': '权限管理',
   '/farmer/bookings': '我的预约',
-  '/farmer/bookings/new': '直播预约提交'
+  '/farmer/bookings/new': '直播预约提交',
+  '/farmer/queues': '直播排队与候补',
+  '/live/queues': '直播排队与候补'
 }
 
 const pageSubtitleByPath: Record<string, string> = {
@@ -117,7 +119,9 @@ const pageSubtitleByPath: Record<string, string> = {
   '/basic-info': '管理农户信息、直播设备和场地等基础数据',
   '/accounts': '管理系统账号和角色权限',
   '/farmer/bookings': '查看和管理您的直播预约状态',
-  '/farmer/bookings/new': '提交直播预约信息，等待管理员审核'
+  '/farmer/bookings/new': '提交直播预约信息，等待管理员审核',
+  '/farmer/queues': '时段已满可加入排队，场地释放后自动升级候补',
+  '/live/queues': '查看各场地时段排队情况，必要时关闭队列'
 }
 
 const route = useRoute()

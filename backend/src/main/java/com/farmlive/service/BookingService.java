@@ -24,9 +24,11 @@ public class BookingService {
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final BookingRepository repository;
+    private final QueueService queueService;
 
-    public BookingService(BookingRepository repository) {
+    public BookingService(BookingRepository repository, QueueService queueService) {
         this.repository = repository;
+        this.queueService = queueService;
     }
 
     @Transactional
@@ -120,6 +122,7 @@ public class BookingService {
         repository.updateCancel(booking.id(),
                 reason == null || reason.isBlank() ? "农户主动取消" : reason.trim());
         repository.deleteLocks(booking.id());
+        queueService.promoteNext(booking.venueId(), booking.startTime());
         return repository.findViewById(booking.id())
                 .orElseThrow(() -> BusinessException.notFound("预约不存在"));
     }

@@ -131,6 +131,45 @@ public final class Dtos {
     ) {
     }
 
+    // ---------------- queue ----------------
+
+    public record QueueCreateRequest(
+            @NotNull(message = "场地不能为空") Long venueId,
+            @NotBlank(message = "开始时间不能为空") String startTime,
+            @NotBlank(message = "结束时间不能为空") String endTime
+    ) {
+    }
+
+    public record SlotStatusView(
+            boolean occupied,
+            boolean selfOccupied,
+            boolean canJoin,
+            int queueCount,
+            String reason
+    ) {
+    }
+
+    public record QueueView(
+            Long id,
+            String queueNo,
+            Long farmerId,
+            String farmerName,
+            Long venueId,
+            String venueName,
+            String slotStart,
+            String slotEnd,
+            int position,
+            int totalInQueue,
+            int estimatedWait,
+            String status,
+            String candidateDeadline,
+            Long assignedDeviceId,
+            String assignedDeviceName,
+            Long confirmedBookingId,
+            String createdAt
+    ) {
+    }
+
     public record AccountView(
             Long id,
             String username,

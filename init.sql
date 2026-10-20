@@ -211,6 +211,7 @@ CREATE TABLE IF NOT EXISTS queue_ticket (
   farmer_id BIGINT NOT NULL,
   venue_id BIGINT NOT NULL,
   slot_start DATETIME NOT NULL,
+  slot_end DATETIME NOT NULL,
   position INT NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'queued',
   candidate_deadline DATETIME NULL,
