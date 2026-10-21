@@ -17,7 +17,15 @@
           style="width: 260px"
         />
         <RegionSelect v-model="countyCode" class="region-filter" />
-        <el-input v-model="productName" placeholder="农产品名称" clearable style="width: 150px" />
+        <el-select
+          v-model="productName"
+          placeholder="全部农产品"
+          clearable
+          filterable
+          style="width: 100%"
+        >
+          <el-option v-for="name in productNames" :key="name" :label="name" :value="name" />
+        </el-select>
         <el-button type="primary" @click="load">查询</el-button>
         <el-button v-if="canSeeDetail" @click="exportData">导出 CSV</el-button>
       </div>
@@ -100,6 +108,7 @@ import {
   getDetails,
   getOverview,
   getTrend,
+  listProductNames,
   type StatsDetail,
   type StatsOverview,
   type StatsTrend
@@ -110,6 +119,7 @@ const canSeeDetail = computed(() => currentUser()?.roleCode !== 'data_viewer')
 const range = ref<[string, string] | null>(null)
 const countyCode = ref('')
 const productName = ref('')
+const productNames = ref<string[]>([])
 const page = ref(1)
 const size = ref(10)
 const total = ref(0)
@@ -178,7 +188,18 @@ async function exportData() {
   }
 }
 
-onMounted(load)
+async function loadProductNames() {
+  try {
+    productNames.value = await listProductNames()
+  } catch {
+    // 农产品下拉加载失败时仍可按其他条件统计
+  }
+}
+
+onMounted(async () => {
+  await loadProductNames()
+  await load()
+})
 </script>
 
 <style scoped>
@@ -191,7 +212,8 @@ onMounted(load)
 }
 
 .stats-filter :deep(.el-date-editor),
-.stats-filter :deep(.el-input) {
+.stats-filter :deep(.el-input),
+.stats-filter :deep(.el-select) {
   width: 100% !important;
 }
 

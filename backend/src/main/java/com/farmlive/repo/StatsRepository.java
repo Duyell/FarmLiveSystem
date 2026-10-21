@@ -105,10 +105,16 @@ public class StatsRepository {
 
     public PageResult<Dtos.StatsDetailView> details(Filter filter, int page, int size) {
         List<Object> args = new ArrayList<>();
-        String where = where(filter, args);
+        String baseWhere = where(filter, args);
+        List<Object> countArgs = new ArrayList<>(args);
+        String productWhere = productFilter(filter, args, "s");
         String countSql = "SELECT COUNT(*) FROM booking b JOIN venue v ON v.id = b.venue_id "
-                + where + " AND b.status = 'completed'";
-        Long total = jdbc.queryForObject(countSql, Long.class, args.toArray());
+                + baseWhere + " AND b.status = 'completed'";
+        if (hasProduct(filter)) {
+            countSql += " AND EXISTS (SELECT 1 FROM sales_record sx WHERE sx.booking_id = b.id AND sx.product_name = ?)";
+            countArgs.add(filter.productName().trim());
+        }
+        Long total = jdbc.queryForObject(countSql, Long.class, countArgs.toArray());
         List<Object> pageArgs = new ArrayList<>(args);
         pageArgs.add(size);
         pageArgs.add((page - 1) * size);
@@ -121,7 +127,7 @@ public class StatsRepository {
                 JOIN farmer f ON f.id = b.farmer_id
                 JOIN venue v ON v.id = b.venue_id
                 LEFT JOIN sales_record s ON s.booking_id = b.id
-                """ + where + " AND b.status = 'completed' "
+                """ + baseWhere + productWhere + " AND b.status = 'completed' "
                 + "GROUP BY b.id, b.booking_no, f.name, v.name, v.county_code, b.start_time, b.topic "
                 + "ORDER BY b.start_time DESC LIMIT ? OFFSET ?", detailMapper, pageArgs.toArray());
         return new PageResult<>(items, total == null ? 0 : total, page, size);
@@ -129,7 +135,8 @@ public class StatsRepository {
 
     public List<Dtos.StatsTrendView> trend(Filter filter, String granularity) {
         List<Object> args = new ArrayList<>();
-        String where = where(filter, args);
+        String baseWhere = where(filter, args);
+        String productWhere = productFilter(filter, args, "s");
         String format = switch (granularity == null ? "day" : granularity) {
             case "week" -> "%x-%v";
             case "month" -> "%Y-%m";
@@ -145,7 +152,7 @@ public class StatsRepository {
                 FROM booking b
                 JOIN venue v ON v.id = b.venue_id
                 LEFT JOIN sales_record s ON s.booking_id = b.id
-                """ + where + " AND b.status = 'completed' "
+                """ + baseWhere + productWhere + " AND b.status = 'completed' "
                 + "GROUP BY period ORDER BY period", (rs, rowNum) -> new Dtos.StatsTrendView(
                 rs.getString("period"), rs.getLong("live_count"), rs.getDouble("sold_quantity")
         ), queryArgs.toArray());
@@ -153,7 +160,8 @@ public class StatsRepository {
 
     public List<Dtos.StatsDetailView> exportDetails(Filter filter) {
         List<Object> args = new ArrayList<>();
-        String where = where(filter, args);
+        String baseWhere = where(filter, args);
+        String productWhere = productFilter(filter, args, "s");
         return jdbc.query("""
                 SELECT b.id AS booking_id, b.booking_no, f.name AS farmer_name,
                        v.name AS venue_name, v.county_code, b.start_time, b.topic,
@@ -163,9 +171,31 @@ public class StatsRepository {
                 JOIN farmer f ON f.id = b.farmer_id
                 JOIN venue v ON v.id = b.venue_id
                 LEFT JOIN sales_record s ON s.booking_id = b.id
-                """ + where + " AND b.status = 'completed' "
+                """ + baseWhere + productWhere + " AND b.status = 'completed' "
                 + "GROUP BY b.id, b.booking_no, f.name, v.name, v.county_code, b.start_time, b.topic "
                 + "ORDER BY b.start_time DESC", detailMapper, args.toArray());
+    }
+
+    public List<String> productNames() {
+        return jdbc.queryForList("""
+                SELECT product_name FROM (
+                    SELECT product_name FROM sales_record
+                    WHERE product_name IS NOT NULL AND product_name <> ''
+                    UNION
+                    SELECT product_name FROM booking_product
+                    WHERE product_name IS NOT NULL AND product_name <> ''
+                ) t ORDER BY product_name
+                """, String.class);
+    }
+
+    private boolean hasProduct(Filter filter) {
+        return filter.productName() != null && !filter.productName().isBlank();
+    }
+
+    private String productFilter(Filter filter, List<Object> args, String alias) {
+        if (!hasProduct(filter)) return "";
+        args.add(filter.productName().trim());
+        return " AND " + alias + ".product_name = ? ";
     }
 
     private String where(Filter filter, List<Object> args) {

@@ -57,6 +57,10 @@ public class StatsService {
         return repository.exportDetails(filter(from, to, countyCode, venueId, productName));
     }
 
+    public List<String> productNames() {
+        return repository.productNames();
+    }
+
     private StatsRepository.Filter filter(String from, String to, String countyCode,
                                           Long venueId, String productName) {
         LocalDate endDate = parseDate(to, LocalDate.now());

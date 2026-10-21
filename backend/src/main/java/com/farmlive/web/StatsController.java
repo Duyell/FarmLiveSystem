@@ -32,6 +32,11 @@ public class StatsController {
         this.service = service;
     }
 
+    @GetMapping("/products")
+    public ApiResponse<List<String>> products() {
+        return ApiResponse.ok(service.productNames());
+    }
+
     @GetMapping("/overview")
     public ApiResponse<Dtos.StatsOverviewView> overview(
             @RequestParam(required = false) String from,

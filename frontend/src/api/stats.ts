@@ -52,6 +52,10 @@ export async function getTrend(
   return get<StatsTrend[]>('/stats/trend', params)
 }
 
+export async function listProductNames(): Promise<string[]> {
+  return get<string[]>('/stats/products')
+}
+
 export async function downloadStats(params: StatsQuery): Promise<Blob> {
   return download('/stats/export', params)
 }
