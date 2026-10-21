@@ -67,13 +67,13 @@
       <template v-if="canSeeDetail">
         <div class="section-title">完成场次明细</div>
         <el-table :data="details" v-loading="loading" border stripe>
-          <el-table-column prop="startTime" label="场次时间" width="170" />
-          <el-table-column prop="bookingNo" label="预约号" width="180" />
-          <el-table-column prop="farmerName" label="农户" width="100" />
-          <el-table-column prop="venueName" label="场地" width="140" />
-          <el-table-column prop="topic" label="主题" min-width="160" />
-          <el-table-column prop="soldQuantity" label="卖出数量" width="110" />
-          <el-table-column prop="salesCount" label="销售条数" width="100" />
+          <el-table-column prop="startTime" label="场次时间" width="160" />
+          <el-table-column prop="bookingNo" label="预约号" width="160" />
+          <el-table-column prop="farmerName" label="农户" width="90" />
+          <el-table-column prop="venueName" label="场地" width="120" />
+          <el-table-column prop="topic" label="主题" min-width="140" />
+          <el-table-column prop="soldQuantity" label="卖出数量" width="100" />
+          <el-table-column prop="salesCount" label="销售条数" width="90" />
         </el-table>
 
         <el-pagination

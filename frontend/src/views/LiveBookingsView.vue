@@ -24,19 +24,19 @@
       </div>
 
       <el-table :data="rows" v-loading="loading" border stripe>
-        <el-table-column prop="bookingNo" label="预约单号" width="180" />
-        <el-table-column prop="farmerName" label="农户" width="110" />
-        <el-table-column prop="topic" label="直播主题" min-width="160" />
-        <el-table-column prop="venueName" label="场地" width="140" />
-        <el-table-column label="时段" width="190">
+        <el-table-column prop="bookingNo" label="预约单号" width="160" />
+        <el-table-column prop="farmerName" label="农户" width="90" />
+        <el-table-column prop="topic" label="直播主题" min-width="140" />
+        <el-table-column prop="venueName" label="场地" width="120" />
+        <el-table-column label="时段" width="170">
           <template #default="{ row }">{{ row.startTime }} 至 {{ row.endTime.slice(11) }}</template>
         </el-table-column>
-        <el-table-column label="状态" width="90">
+        <el-table-column label="状态" width="80">
           <template #default="{ row }">
             <el-tag :type="statusMeta(row.status).type">{{ statusMeta(row.status).label }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="210" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button
               v-if="row.status === 'pending_review'"

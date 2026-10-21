@@ -11,16 +11,16 @@
       </div>
 
       <el-table :data="rows" v-loading="loading" border stripe>
-        <el-table-column prop="bookingNo" label="预约号" width="180" />
-        <el-table-column prop="farmerName" label="农户" width="100" />
-        <el-table-column prop="venueName" label="场地" width="140" />
-        <el-table-column prop="productName" label="农产品" width="120" />
-        <el-table-column prop="spec" label="规格" width="110" />
-        <el-table-column label="数量" width="110">
+        <el-table-column prop="bookingNo" label="预约号" width="160" />
+        <el-table-column prop="farmerName" label="农户" width="90" />
+        <el-table-column prop="venueName" label="场地" width="120" />
+        <el-table-column prop="productName" label="农产品" width="100" />
+        <el-table-column prop="spec" label="规格" width="90" />
+        <el-table-column label="数量" width="90">
           <template #default="{ row }">{{ row.quantity }} {{ row.unit }}</template>
         </el-table-column>
-        <el-table-column prop="startTime" label="场次时间" width="170" />
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column prop="startTime" label="场次时间" width="150" />
+        <el-table-column label="操作" width="110" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="remove(row)">删除</el-button>

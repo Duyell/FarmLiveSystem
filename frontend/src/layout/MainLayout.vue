@@ -197,7 +197,14 @@ async function logout() {
 
 <style scoped>
 .layout {
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
+}
+
+.layout > :deep(.el-container) {
+  min-width: 0;
+  min-height: 0;
 }
 
 .aside {
@@ -206,6 +213,7 @@ async function logout() {
   display: flex;
   flex-direction: column;
   padding: 0 14px;
+  overflow-y: auto;
 }
 
 .brand {
@@ -349,8 +357,19 @@ async function logout() {
 }
 
 .main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 22px;
   background: #f5f7fa;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.main::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .main :deep(.page-title),

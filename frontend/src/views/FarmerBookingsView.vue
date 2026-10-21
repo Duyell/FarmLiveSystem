@@ -35,18 +35,18 @@
       </div>
 
       <el-table :data="rows" v-loading="loading" border stripe>
-        <el-table-column prop="bookingNo" label="预约单号" width="180" />
-        <el-table-column prop="topic" label="直播主题" min-width="180" />
-        <el-table-column label="时段" width="200">
+        <el-table-column prop="bookingNo" label="预约单号" width="150" />
+        <el-table-column prop="topic" label="直播主题" min-width="140" />
+        <el-table-column label="时段" width="160">
           <template #default="{ row }">{{ row.startTime }} 至 {{ row.endTime.slice(11) }}</template>
         </el-table-column>
-        <el-table-column prop="venueName" label="场地" width="140" />
-        <el-table-column label="状态" width="90">
+        <el-table-column prop="venueName" label="场地" width="110" />
+        <el-table-column label="状态" width="75">
           <template #default="{ row }">
             <el-tag :type="statusMeta(row.status).type">{{ statusMeta(row.status).label }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="审核意见" min-width="160">
+        <el-table-column label="审核意见" min-width="130">
           <template #default="{ row }">
             <span v-if="row.reviewComment">{{ row.reviewComment }}</span>
             <span v-else-if="row.cancelReason">{{ row.cancelReason }}</span>
@@ -54,7 +54,7 @@
             <div v-if="row.recommendedTime" class="recommend">推荐：{{ row.recommendedTime }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="210" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button
               v-if="row.status === 'approved' && hoursLeft(row) >= 24"
