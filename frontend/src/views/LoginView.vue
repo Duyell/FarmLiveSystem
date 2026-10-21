@@ -112,6 +112,7 @@ onMounted(loadCaptcha)
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
   background:
     radial-gradient(circle at 15% 20%, rgba(103, 194, 58, 0.22), transparent 30%),
     radial-gradient(circle at 85% 80%, rgba(64, 158, 255, 0.18), transparent 35%),
@@ -119,7 +120,7 @@ onMounted(loadCaptcha)
 }
 
 .login-card {
-  width: 460px;
+  width: min(460px, calc(100vw - 32px));
   padding: 30px 34px 24px;
   background: #fff;
   border-radius: 16px;
@@ -169,5 +170,30 @@ onMounted(loadCaptcha)
   align-items: center;
   gap: 10px;
   width: 100%;
+  min-width: 0;
+}
+
+.captcha-row :deep(.el-input) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.captcha-row :deep(.el-button) {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 24px 20px;
+  }
+
+  .brand h1 {
+    font-size: 18px;
+  }
+
+  .brand p {
+    font-size: 12px;
+  }
 }
 </style>
