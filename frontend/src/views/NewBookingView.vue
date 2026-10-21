@@ -60,6 +60,8 @@
               :value="venue.venueId"
             />
           </el-select>
+          <div v-if="!form.countyCode" class="field-hint">请先选择所属县域</div>
+          <div v-else-if="venuesLoaded && venues.length === 0" class="field-hint">该区域和时段没有可用场地</div>
         </el-form-item>
         <el-form-item label="直播设备" required>
           <el-select v-model="form.deviceId" placeholder="选择设备" style="width: 100%">
@@ -81,12 +83,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import RegionSelect from '../components/RegionSelect.vue'
 import { currentUser } from '../api/auth'
 import {
+  getFarmerProfile,
   listAvailableVenues,
   submitBooking,
   type AvailableDevice,
@@ -109,9 +112,23 @@ const form = reactive({
 
 const venues = ref<AvailableVenue[]>([])
 const devices = ref<AvailableDevice[]>([])
+const venuesLoaded = ref(false)
 const saving = ref(false)
 
 const farmerLabel = computed(() => (user?.farmerName ? `${user.farmerName}（${user.username}）` : user?.username ?? ''))
+
+async function loadProfile() {
+  try {
+    const profile = await getFarmerProfile()
+    if (!form.countyCode && profile.countyCode) {
+      form.countyCode = profile.countyCode
+    }
+  } catch (error) {
+    ElMessage.error((error as Error).message)
+  }
+}
+
+onMounted(loadProfile)
 
 function disablePastDate(date: Date) {
   return date.getTime() < Date.now() - 24 * 60 * 60 * 1000
@@ -129,6 +146,7 @@ watch(
 async function loadVenues() {
   if (!form.countyCode) {
     venues.value = []
+    venuesLoaded.value = false
     return
   }
   try {
@@ -138,7 +156,9 @@ async function loadVenues() {
       startTime: form.startTime || undefined,
       endTime: form.endTime || undefined
     })
+    venuesLoaded.value = true
   } catch (error) {
+    venuesLoaded.value = true
     ElMessage.error((error as Error).message)
   }
 }
@@ -251,5 +271,12 @@ function reset() {
 .time-hint {
   font-size: 12px;
   color: #7a8699;
+}
+
+.field-hint {
+  width: 100%;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #8a94a6;
 }
 </style>

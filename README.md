@@ -136,6 +136,7 @@ npm run build
 | 农户资质材料 | `GET/POST /api/live/farmers/{id}/qualifications`、`POST /api/live/qualifications/{id}/review` |
 | 登录 | `POST /api/auth/login` |
 | 当前用户 | `GET /api/auth/me` |
+| 农户本人档案 | `GET /api/farmer/profile` |
 | 农户预约 | `POST /api/farmer/bookings`、`GET /api/farmer/bookings`、`POST /api/farmer/bookings/{id}/cancel` |
 | 预约审核 | `GET /api/live/bookings`、`POST /api/live/bookings/{id}/review` |
 | 场次完成 | `POST /api/live/bookings/{id}/complete` |

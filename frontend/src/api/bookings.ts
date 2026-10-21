@@ -87,6 +87,21 @@ export async function listAvailableVenues(params: {
   return get<AvailableVenue[]>('/resources/available', params)
 }
 
+export interface FarmerProfile {
+  id: number
+  farmerNo: string
+  name: string
+  county: string
+  countyCode: string | null
+  phone: string
+  qualificationStatus: string
+  status: string
+}
+
+export async function getFarmerProfile(): Promise<FarmerProfile> {
+  return get<FarmerProfile>('/farmer/profile')
+}
+
 export async function listLiveBookings(params: {
   status?: string
   keyword?: string
