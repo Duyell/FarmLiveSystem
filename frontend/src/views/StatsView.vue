@@ -1,7 +1,9 @@
 <template>
   <div>
     <h2 class="page-title">数据统计</h2>
-    <p class="page-subtitle">按时间、区域和农产品查看四项指标、完成场次明细与趋势。</p>
+    <p class="page-subtitle">
+      {{ canSeeDetail ? '按时间、区域和农产品查看四项指标、完成场次明细与趋势。' : '按时间、区域和农产品查看四项指标和趋势。数据统计员只查看聚合数据。' }}
+    </p>
 
     <div class="page-card">
       <div class="page-toolbar stats-filter">
@@ -17,29 +19,29 @@
         <RegionSelect v-model="countyCode" class="region-filter" />
         <el-input v-model="productName" placeholder="农产品名称" clearable style="width: 150px" />
         <el-button type="primary" @click="load">查询</el-button>
-        <el-button @click="exportData">导出 CSV</el-button>
+        <el-button v-if="canSeeDetail" @click="exportData">导出 CSV</el-button>
       </div>
 
       <el-row :gutter="16" class="metric-row">
-        <el-col :span="6">
+        <el-col :xs="12" :sm="12" :lg="6">
           <div class="metric-card">
             <div class="metric-label">场地占用率</div>
             <div class="metric-value">{{ overview.occupancyRate }}%</div>
           </div>
         </el-col>
-        <el-col :span="6">
+        <el-col :xs="12" :sm="12" :lg="6">
           <div class="metric-card">
             <div class="metric-label">直播场次</div>
             <div class="metric-value">{{ overview.liveCount }}</div>
           </div>
         </el-col>
-        <el-col :span="6">
+        <el-col :xs="12" :sm="12" :lg="6">
           <div class="metric-card">
             <div class="metric-label">卖出数量</div>
             <div class="metric-value">{{ overview.soldQuantity }}</div>
           </div>
         </el-col>
-        <el-col :span="6">
+        <el-col :xs="12" :sm="12" :lg="6">
           <div class="metric-card">
             <div class="metric-label">预约成功率</div>
             <div class="metric-value">{{ overview.successRate }}%</div>
@@ -54,34 +56,45 @@
         <el-table-column prop="soldQuantity" label="卖出数量" width="120" />
       </el-table>
 
-      <div class="section-title">完成场次明细</div>
-      <el-table :data="details" v-loading="loading" border stripe>
-        <el-table-column prop="startTime" label="场次时间" width="170" />
-        <el-table-column prop="bookingNo" label="预约号" width="180" />
-        <el-table-column prop="farmerName" label="农户" width="100" />
-        <el-table-column prop="venueName" label="场地" width="140" />
-        <el-table-column prop="topic" label="主题" min-width="160" />
-        <el-table-column prop="soldQuantity" label="卖出数量" width="110" />
-        <el-table-column prop="salesCount" label="销售条数" width="100" />
-      </el-table>
+      <template v-if="canSeeDetail">
+        <div class="section-title">完成场次明细</div>
+        <el-table :data="details" v-loading="loading" border stripe>
+          <el-table-column prop="startTime" label="场次时间" width="170" />
+          <el-table-column prop="bookingNo" label="预约号" width="180" />
+          <el-table-column prop="farmerName" label="农户" width="100" />
+          <el-table-column prop="venueName" label="场地" width="140" />
+          <el-table-column prop="topic" label="主题" min-width="160" />
+          <el-table-column prop="soldQuantity" label="卖出数量" width="110" />
+          <el-table-column prop="salesCount" label="销售条数" width="100" />
+        </el-table>
 
-      <el-pagination
-        class="pager"
-        background
-        layout="total, prev, pager, next"
-        :total="total"
-        :page-size="size"
-        :current-page="page"
-        @current-change="changePage"
+        <el-pagination
+          class="pager"
+          background
+          layout="total, prev, pager, next"
+          :total="total"
+          :page-size="size"
+          :current-page="page"
+          @current-change="changePage"
+        />
+      </template>
+      <el-alert
+        v-else
+        class="privacy-tip"
+        type="info"
+        :closable="false"
+        title="数据统计员只查看聚合指标和趋势，不展示单个农户明细。"
+        show-icon
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import RegionSelect from '../components/RegionSelect.vue'
+import { currentUser } from '../api/auth'
 import {
   downloadStats,
   getDetails,
@@ -91,6 +104,8 @@ import {
   type StatsOverview,
   type StatsTrend
 } from '../api/stats'
+
+const canSeeDetail = computed(() => currentUser()?.roleCode !== 'data_viewer')
 
 const range = ref<[string, string] | null>(null)
 const countyCode = ref('')
@@ -123,15 +138,20 @@ function query() {
 async function load() {
   loading.value = true
   try {
-    const [ov, tr, detail] = await Promise.all([
+    const [ov, tr] = await Promise.all([
       getOverview(query()),
-      getTrend({ ...query(), granularity: 'day' }),
-      getDetails({ ...query(), page: page.value, size: size.value })
+      getTrend({ ...query(), granularity: 'day' })
     ])
     Object.assign(overview, ov)
     trend.value = tr
-    details.value = detail.items
-    total.value = detail.total
+    if (canSeeDetail.value) {
+      const detail = await getDetails({ ...query(), page: page.value, size: size.value })
+      details.value = detail.items
+      total.value = detail.total
+    } else {
+      details.value = []
+      total.value = 0
+    }
   } catch (error) {
     ElMessage.error((error as Error).message)
   } finally {
@@ -191,5 +211,15 @@ onMounted(load)
   margin: 18px 0 10px;
   font-weight: 600;
   color: #1f3b25;
+}
+
+.privacy-tip {
+  margin-top: 18px;
+}
+
+@media (max-width: 768px) {
+  .region-filter {
+    width: 100% !important;
+  }
 }
 </style>

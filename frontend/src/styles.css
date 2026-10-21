@@ -35,3 +35,66 @@ html, body, #app {
   color: #7a8699;
   font-size: 13px;
 }
+
+@media (max-width: 768px) {
+  html,
+  body,
+  #app {
+    overflow-x: hidden;
+  }
+
+  .page-card {
+    padding: 12px;
+    max-width: 100%;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .page-subtitle {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .page-toolbar {
+    gap: 8px;
+  }
+
+  .page-toolbar > .el-input,
+  .page-toolbar > .el-select,
+  .page-toolbar > .el-date-editor,
+  .page-toolbar > .el-input-number {
+    width: 100% !important;
+    flex: 1 1 100%;
+  }
+
+  .stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .el-dialog {
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  .el-message-box {
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  .el-table {
+    font-size: 12px;
+  }
+
+  .login-card {
+    width: calc(100vw - 32px) !important;
+    max-width: 460px;
+    padding: 24px 20px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .stat-row {
+    grid-template-columns: 1fr !important;
+  }
+}

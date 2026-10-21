@@ -352,4 +352,69 @@ async function logout() {
   padding: 22px;
   background: #f5f7fa;
 }
+
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .aside {
+    width: 100% !important;
+    padding: 0 10px 8px;
+  }
+
+  .brand {
+    height: 52px;
+  }
+
+  .user-card,
+  .menu-group {
+    display: none;
+  }
+
+  .menu {
+    display: flex;
+    flex: none;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .menu :deep(.el-menu-item) {
+    flex: 0 0 auto;
+    height: 38px;
+    padding: 0 12px;
+    margin: 0 4px 0 0;
+    font-size: 13px;
+  }
+
+  .aside-footer {
+    padding: 4px 0;
+  }
+
+  .logout-button {
+    width: auto;
+    height: 30px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .header {
+    height: auto;
+    min-height: 58px;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .header-title {
+    font-size: 16px;
+  }
+
+  .header-sub {
+    font-size: 11px;
+  }
+
+  .main {
+    padding: 12px;
+  }
+}
 </style>

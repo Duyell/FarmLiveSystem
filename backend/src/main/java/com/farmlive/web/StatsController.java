@@ -1,6 +1,9 @@
 package com.farmlive.web;
 
+import com.farmlive.auth.AuthInterceptor;
+import com.farmlive.auth.CurrentUser;
 import com.farmlive.common.ApiResponse;
+import com.farmlive.common.BusinessException;
 import com.farmlive.common.PageResult;
 import com.farmlive.dto.Dtos;
 import com.farmlive.service.StatsService;
@@ -9,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,6 +44,7 @@ public class StatsController {
 
     @GetMapping("/details")
     public ApiResponse<PageResult<Dtos.StatsDetailView>> details(
+            @RequestAttribute(AuthInterceptor.CURRENT_USER) CurrentUser user,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
             @RequestParam(required = false) String countyCode,
@@ -47,6 +52,7 @@ public class StatsController {
             @RequestParam(required = false) String productName,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
+        requireDetail(user);
         page = Math.max(1, page);
         size = Math.min(100, Math.max(1, size));
         return ApiResponse.ok(service.details(from, to, countyCode, venueId, productName, page, size));
@@ -65,11 +71,13 @@ public class StatsController {
 
     @GetMapping("/export")
     public ResponseEntity<byte[]> export(
+            @RequestAttribute(AuthInterceptor.CURRENT_USER) CurrentUser user,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
             @RequestParam(required = false) String countyCode,
             @RequestParam(required = false) Long venueId,
             @RequestParam(required = false) String productName) {
+        requireDetail(user);
         List<Dtos.StatsDetailView> rows = service.export(from, to, countyCode, venueId, productName);
         StringBuilder csv = new StringBuilder("\uFEFF场次开始,预约号,农户,场地,区域编码,主题,销售数量,销售条数\n");
         for (Dtos.StatsDetailView row : rows) {
@@ -87,6 +95,12 @@ public class StatsController {
         headers.setContentDisposition(ContentDisposition.attachment()
                 .filename("stats-details.csv", StandardCharsets.UTF_8).build());
         return ResponseEntity.ok().headers(headers).body(csv.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    private void requireDetail(CurrentUser user) {
+        if (!"live_admin".equals(user.roleCode()) && !"system_admin".equals(user.roleCode())) {
+            throw BusinessException.forbidden("数据统计员只能查看聚合统计，不能查看单个农户明细");
+        }
     }
 
     private String csv(String value) {
