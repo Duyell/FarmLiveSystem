@@ -260,8 +260,13 @@ function reset() {
 .time-range {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.time-range :deep(.el-select) {
+  width: 116px;
+  flex: 0 0 116px;
 }
 
 .time-sep {
@@ -271,6 +276,13 @@ function reset() {
 .time-hint {
   font-size: 12px;
   color: #7a8699;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .time-range {
+    flex-wrap: wrap;
+  }
 }
 
 .field-hint {
