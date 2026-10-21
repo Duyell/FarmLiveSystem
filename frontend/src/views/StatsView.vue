@@ -183,11 +183,22 @@ onMounted(load)
 
 <style scoped>
 .stats-filter {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(210px, 1.1fr) minmax(170px, 0.9fr) minmax(130px, 0.6fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
 }
+
+.stats-filter :deep(.el-date-editor),
+.stats-filter :deep(.el-input) {
+  width: 100% !important;
+}
+
 .region-filter {
-  width: 220px;
+  width: 100%;
 }
+
 .metric-row {
   margin: 8px 0 20px;
 }
@@ -218,6 +229,15 @@ onMounted(load)
 }
 
 @media (max-width: 768px) {
+  .stats-filter {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-filter :deep(.el-button) {
+    width: 100%;
+    margin-left: 0;
+  }
+
   .region-filter {
     width: 100% !important;
   }
