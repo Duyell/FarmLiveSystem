@@ -429,6 +429,14 @@ public final class Dtos {
     public record StatsTrendView(String period, long liveCount, double soldQuantity) {
     }
 
+    public record MyStatsView(
+            long bookingTotal,
+            long approvedCount,
+            long completedCount,
+            double soldQuantity
+    ) {
+    }
+
     // ---------------- audit ----------------
 
     public record AuditLogView(

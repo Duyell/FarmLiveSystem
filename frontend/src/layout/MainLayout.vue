@@ -112,7 +112,7 @@ const menuByRole: Record<string, MenuItem[]> = {
     { path: '/farmer/bookings', title: '我的预约', icon: List },
     { path: '/farmer/queues', title: '直播排队与候补', icon: Sort },
     { path: '/notifications', title: '通知管理', icon: Bell },
-    { path: '/todo?name=数据统计分析', title: '数据统计分析', icon: TrendCharts },
+    { path: '/farmer/stats', title: '我的数据', icon: TrendCharts },
     { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
   ],
   data_viewer: [
@@ -131,6 +131,7 @@ const pageTitleByPath: Record<string, string> = {
   '/farmer/bookings': '我的预约',
   '/farmer/bookings/new': '直播预约',
   '/farmer/queues': '直播排队与候补',
+  '/farmer/stats': '我的数据',
   '/live/queues': '直播排队与候补',
   '/live/sales': '销售录入',
   '/stats': '数据统计',
@@ -148,6 +149,7 @@ const pageSubtitleByPath: Record<string, string> = {
   '/farmer/bookings': '查看和管理您的直播预约状态',
   '/farmer/bookings/new': '填写并提交直播预约，等待管理员审核',
   '/farmer/queues': '时段已满可加入排队，场地释放后自动升级候补',
+  '/farmer/stats': '查看本人预约完成场次和卖出数量',
   '/live/queues': '查看各场地时段排队情况，必要时关闭队列',
   '/live/sales': '按已完成场次录入卖出的农产品数量',
   '/stats': '查看四项指标、完成场次明细和趋势',

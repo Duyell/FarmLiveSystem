@@ -30,6 +30,7 @@ const router = createRouter({
         { path: 'farmer/bookings', name: 'farmer-bookings', component: () => import('../views/FarmerBookingsView.vue'), meta: { roles: ['farmer'] } },
         { path: 'farmer/bookings/new', name: 'farmer-booking-new', component: () => import('../views/NewBookingView.vue'), meta: { roles: ['farmer'] } },
         { path: 'farmer/queues', name: 'farmer-queues', component: () => import('../views/FarmerQueuesView.vue'), meta: { roles: ['farmer'] } },
+        { path: 'farmer/stats', name: 'farmer-stats', component: () => import('../views/FarmerStatsView.vue'), meta: { roles: ['farmer'] } },
         { path: 'live/queues', name: 'live-queues', component: () => import('../views/LiveQueuesView.vue'), meta: { roles: ['system_admin', 'live_admin'] } },
         { path: 'notifications', name: 'notifications', component: () => import('../views/NotificationsView.vue') },
         { path: 'live/notifications', name: 'live-notifications', component: () => import('../views/LiveNotificationsView.vue'), meta: { roles: ['system_admin', 'live_admin'] } },

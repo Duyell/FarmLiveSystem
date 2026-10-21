@@ -188,6 +188,42 @@ public class StatsRepository {
                 """, String.class);
     }
 
+    public Dtos.MyStatsView myStats(Long farmerId) {
+        java.util.Map<String, Object> row = jdbc.queryForMap("""
+                SELECT COUNT(*) AS booking_total,
+                       COALESCE(SUM(CASE WHEN status IN ('approved','completed') THEN 1 ELSE 0 END),0) AS approved_count,
+                       COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END),0) AS completed_count
+                FROM booking WHERE farmer_id = ?
+                """, farmerId);
+        Double sold = jdbc.queryForObject("""
+                SELECT COALESCE(SUM(s.quantity),0) FROM sales_record s
+                JOIN booking b ON b.id = s.booking_id
+                WHERE b.farmer_id = ? AND b.status = 'completed'
+                """, Double.class, farmerId);
+        return new Dtos.MyStatsView(
+                ((Number) row.get("booking_total")).longValue(),
+                ((Number) row.get("approved_count")).longValue(),
+                ((Number) row.get("completed_count")).longValue(),
+                sold == null ? 0 : sold
+        );
+    }
+
+    public List<Dtos.StatsDetailView> myDetails(Long farmerId) {
+        return jdbc.query("""
+                SELECT b.id AS booking_id, b.booking_no, f.name AS farmer_name,
+                       v.name AS venue_name, v.county_code, b.start_time, b.topic,
+                       COALESCE(SUM(s.quantity),0) AS sold_quantity,
+                       COUNT(s.id) AS sales_count
+                FROM booking b
+                JOIN farmer f ON f.id = b.farmer_id
+                JOIN venue v ON v.id = b.venue_id
+                LEFT JOIN sales_record s ON s.booking_id = b.id
+                WHERE b.farmer_id = ? AND b.status = 'completed'
+                GROUP BY b.id, b.booking_no, f.name, v.name, v.county_code, b.start_time, b.topic
+                ORDER BY b.start_time DESC
+                """, detailMapper, farmerId);
+    }
+
     private boolean hasProduct(Filter filter) {
         return filter.productName() != null && !filter.productName().isBlank();
     }

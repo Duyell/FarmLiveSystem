@@ -61,6 +61,14 @@ public class StatsService {
         return repository.productNames();
     }
 
+    public Dtos.MyStatsView myStats(Long farmerId) {
+        return repository.myStats(farmerId);
+    }
+
+    public List<Dtos.StatsDetailView> myDetails(Long farmerId) {
+        return repository.myDetails(farmerId);
+    }
+
     private StatsRepository.Filter filter(String from, String to, String countyCode,
                                           Long venueId, String productName) {
         LocalDate endDate = parseDate(to, LocalDate.now());

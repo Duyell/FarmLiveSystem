@@ -143,6 +143,7 @@ npm run build
 | 预约调整 | `/api/farmer/bookings/{id}/adjustments`、`/api/farmer/adjustments`、`/api/live/adjustments` |
 | 销售录入 | `GET/POST/PUT/DELETE /api/live/sales` |
 | 数据统计 | `GET /api/stats/overview`、`/api/stats/details`、`/api/stats/trend`、`/api/stats/export` |
+| 农户个人统计 | `GET /api/farmer/stats`、`/api/farmer/stats/details` |
 | 操作日志 | `GET /api/admin/logs`、`/api/admin/logs/export` |
 | 排队候补 | `POST/GET /api/farmer/queues`、`POST /api/farmer/queues/{id}/confirm`、`POST /api/farmer/queues/{id}/abandon` |
 | 队列管理 | `GET /api/live/queues`、`POST /api/live/queues/{id}/close` |

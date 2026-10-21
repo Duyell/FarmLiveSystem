@@ -22,6 +22,13 @@ export interface StatsDetail {
   salesCount: number
 }
 
+export interface MyStats {
+  bookingTotal: number
+  approvedCount: number
+  completedCount: number
+  soldQuantity: number
+}
+
 export interface StatsTrend {
   period: string
   liveCount: number
@@ -54,6 +61,14 @@ export async function getTrend(
 
 export async function listProductNames(): Promise<string[]> {
   return get<string[]>('/stats/products')
+}
+
+export async function getMyStats(): Promise<MyStats> {
+  return get<MyStats>('/farmer/stats')
+}
+
+export async function getMyStatsDetails(): Promise<StatsDetail[]> {
+  return get<StatsDetail[]>('/farmer/stats/details')
 }
 
 export async function downloadStats(params: StatsQuery): Promise<Blob> {
