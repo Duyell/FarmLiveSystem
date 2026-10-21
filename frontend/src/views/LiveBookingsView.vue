@@ -24,19 +24,19 @@
       </div>
 
       <el-table :data="rows" v-loading="loading" border stripe>
-        <el-table-column prop="bookingNo" label="预约单号" width="160" />
-        <el-table-column prop="farmerName" label="农户" width="90" />
-        <el-table-column prop="topic" label="直播主题" min-width="140" />
-        <el-table-column prop="venueName" label="场地" width="120" />
-        <el-table-column label="时段" width="170">
+        <el-table-column prop="bookingNo" label="预约单号" :width="compact ? 120 : 160" show-overflow-tooltip />
+        <el-table-column prop="farmerName" label="农户" :width="compact ? 65 : 90" show-overflow-tooltip />
+        <el-table-column prop="topic" label="直播主题" :min-width="compact ? 90 : 140" show-overflow-tooltip />
+        <el-table-column prop="venueName" label="场地" :width="compact ? 80 : 120" show-overflow-tooltip />
+        <el-table-column label="时段" :width="compact ? 120 : 170">
           <template #default="{ row }">{{ row.startTime }} 至 {{ row.endTime.slice(11) }}</template>
         </el-table-column>
-        <el-table-column label="状态" width="80">
+        <el-table-column label="状态" :width="compact ? 60 : 80">
           <template #default="{ row }">
             <el-tag :type="statusMeta(row.status).type">{{ statusMeta(row.status).label }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" :width="compact ? 120 : 180" fixed="right">
           <template #default="{ row }">
             <el-button
               v-if="row.status === 'pending_review'"
@@ -133,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   BOOKING_STATUS,
@@ -154,6 +154,11 @@ const saving = ref(false)
 const dialogVisible = ref(false)
 const current = ref<Booking | null>(null)
 const reviewForm = reactive({ comment: '', recommendedTime: '' })
+const compact = ref(window.innerWidth < 1320)
+
+function updateCompact() {
+  compact.value = window.innerWidth < 1320
+}
 
 function statusMeta(value: string) {
   return BOOKING_STATUS[value] ?? { label: value, type: 'info' as const }
@@ -225,7 +230,14 @@ function changePage(next: number) {
   load()
 }
 
-onMounted(load)
+onMounted(() => {
+  window.addEventListener('resize', updateCompact)
+  load()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateCompact)
+})
 </script>
 
 <style scoped>
