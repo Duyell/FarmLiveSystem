@@ -17,7 +17,12 @@
       <el-table :data="rows" v-loading="loading" border stripe>
         <el-table-column prop="venueNo" label="场地编号" width="120" />
         <el-table-column prop="name" label="场地名称" width="150" />
-        <el-table-column prop="county" label="所属区域" width="130" />
+        <el-table-column label="所属区域" width="190">
+          <template #default="{ row }">
+            <span v-if="regionLabel(row.countyCode)">{{ regionLabel(row.countyCode) }}</span>
+            <span v-else class="muted">{{ row.countyCode || '未设置' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="location" label="位置" min-width="180" />
         <el-table-column prop="capacity" label="容纳人数" width="100" />
         <el-table-column label="开放时段" width="130">
@@ -90,7 +95,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { del, get, post, put, type PageResult } from '../api/http'
-import { findRegionPath } from '../api/regions'
+import { findRegionPath, loadRegionTree } from '../api/regions'
 import RegionSelect from '../components/RegionSelect.vue'
 
 interface Venue {
@@ -109,7 +114,10 @@ interface Venue {
 const rows = ref<Venue[]>([])
 const keyword = ref('')
 const filterCountyCode = ref('')
+const regionTreeLoaded = ref(false)
 const filterLabel = computed(() => {
+  // 读取 loaded 标记，保证区域树异步加载完成后标签能重新计算
+  if (!regionTreeLoaded.value) return ''
   const path = findRegionPath(filterCountyCode.value)
   return path ? path.map((item) => item.name).join(' / ') : ''
 })
@@ -135,6 +143,12 @@ const form = reactive({
 
 function statusLabel(value: string) {
   return { available: '可用', maintenance: '维修', disabled: '停用' }[value] || value
+}
+
+function regionLabel(code: string | null) {
+  if (!code || !regionTreeLoaded.value) return ''
+  const path = findRegionPath(code)
+  return path ? path.map((item) => item.name).join(' / ') : ''
 }
 
 function statusTag(value: string) {
@@ -251,7 +265,15 @@ function changePage(next: number) {
   load()
 }
 
-onMounted(load)
+onMounted(async () => {
+  try {
+    await loadRegionTree()
+    regionTreeLoaded.value = true
+  } catch {
+    // 区域树加载失败时回退显示编码，不阻塞场地列表
+  }
+  await load()
+})
 </script>
 
 <style scoped>
@@ -264,5 +286,9 @@ onMounted(load)
   height: 32px;
   padding: 0 10px;
   line-height: 30px;
+}
+
+.muted {
+  color: #a8b2c1;
 }
 </style>
