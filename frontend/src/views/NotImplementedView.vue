@@ -5,7 +5,7 @@
         <el-icon :size="44"><Tools /></el-icon>
       </div>
       <h2>{{ title }}</h2>
-      <p>该模块正在建设中，后续按开发计划迭代上线，暂未提供数据。</p>
+      <p>该功能暂未开放，敬请期待。</p>
       <el-button type="primary" @click="goBack">返回</el-button>
     </div>
   </div>

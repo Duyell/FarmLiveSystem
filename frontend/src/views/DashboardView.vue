@@ -16,18 +16,6 @@
         </div>
       </el-col>
     </el-row>
-
-    <div class="page-card quick-card">
-      <h3>当前开发范围</h3>
-      <p>已覆盖登录、账号、农户、场地、设备、区域、预约调整、排队候补、通知、销售统计和操作日志。二次验证、AI 助手和手机适配在后续迭代实现。</p>
-      <el-alert
-        title="初始密码提示"
-        type="warning"
-        :closable="false"
-        description="admin 初始密码为 Admin@123；首次登录后系统会要求修改密码。"
-        show-icon
-      />
-    </div>
   </div>
 </template>
 
@@ -111,19 +99,5 @@ onMounted(async () => {
   font-size: 24px;
   font-weight: 700;
   color: #1f2d3d;
-}
-
-.quick-card {
-  margin-top: 8px;
-  line-height: 1.7;
-}
-
-.quick-card h3 {
-  margin: 0 0 8px;
-}
-
-.quick-card p {
-  color: #5c6b7a;
-  margin-top: 0;
 }
 </style>
