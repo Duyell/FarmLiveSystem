@@ -108,7 +108,7 @@ const menuByRole: Record<string, MenuItem[]> = {
     { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
   ],
   farmer: [
-    { path: '/farmer/bookings/new', title: '直播预约管理', icon: Calendar },
+    { path: '/farmer/bookings/new', title: '预约直播', icon: Calendar },
     { path: '/farmer/bookings', title: '我的预约', icon: List },
     { path: '/farmer/queues', title: '直播排队与候补', icon: Sort },
     { path: '/notifications', title: '通知管理', icon: Bell },
@@ -351,6 +351,11 @@ async function logout() {
 .main {
   padding: 22px;
   background: #f5f7fa;
+}
+
+.main :deep(.page-title),
+.main :deep(.page-subtitle) {
+  display: none;
 }
 
 @media (max-width: 768px) {
