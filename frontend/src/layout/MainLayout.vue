@@ -86,7 +86,7 @@ interface MenuItem {
 const menuByRole: Record<string, MenuItem[]> = {
   system_admin: [
     { path: '/dashboard', title: '工作台', icon: DataBoard },
-    { path: '/bookings', title: '直播预约管理', icon: Calendar },
+    { path: '/bookings', title: '直播预约审核', icon: Calendar },
     { path: '/live/adjustments', title: '预约调整审批', icon: Refresh },
     { path: '/basic-info', title: '基础信息管理', icon: Files },
     { path: '/live/queues', title: '直播排队与候补', icon: Sort },
@@ -98,7 +98,7 @@ const menuByRole: Record<string, MenuItem[]> = {
     { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
   ],
   live_admin: [
-    { path: '/bookings', title: '直播预约管理', icon: Calendar },
+    { path: '/bookings', title: '直播预约审核', icon: Calendar },
     { path: '/live/adjustments', title: '预约调整审批', icon: Refresh },
     { path: '/basic-info', title: '基础信息管理', icon: Files },
     { path: '/live/queues', title: '直播排队与候补', icon: Sort },
@@ -108,7 +108,7 @@ const menuByRole: Record<string, MenuItem[]> = {
     { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
   ],
   farmer: [
-    { path: '/farmer/bookings/new', title: '预约直播', icon: Calendar },
+    { path: '/farmer/bookings/new', title: '直播预约', icon: Calendar },
     { path: '/farmer/bookings', title: '我的预约', icon: List },
     { path: '/farmer/queues', title: '直播排队与候补', icon: Sort },
     { path: '/notifications', title: '通知管理', icon: Bell },
@@ -124,12 +124,12 @@ const menuByRole: Record<string, MenuItem[]> = {
 
 const pageTitleByPath: Record<string, string> = {
   '/dashboard': '工作台',
-  '/bookings': '直播预约管理',
+  '/bookings': '直播预约审核',
   '/live/adjustments': '预约调整审批',
   '/basic-info': '基础信息管理',
   '/accounts': '权限管理',
   '/farmer/bookings': '我的预约',
-  '/farmer/bookings/new': '直播预约提交',
+  '/farmer/bookings/new': '直播预约',
   '/farmer/queues': '直播排队与候补',
   '/live/queues': '直播排队与候补',
   '/live/sales': '销售录入',
@@ -141,12 +141,12 @@ const pageTitleByPath: Record<string, string> = {
 
 const pageSubtitleByPath: Record<string, string> = {
   '/dashboard': '汇总账号、农户、场地、设备和预约数据',
-  '/bookings': '审核农户提交的直播预约',
+  '/bookings': '审核农户提交的直播预约，通过后锁定场地和设备',
   '/live/adjustments': '审批农户提交的改期申请',
   '/basic-info': '管理农户信息、直播设备和场地等基础数据',
   '/accounts': '管理系统账号和角色权限',
   '/farmer/bookings': '查看和管理您的直播预约状态',
-  '/farmer/bookings/new': '提交直播预约信息，等待管理员审核',
+  '/farmer/bookings/new': '填写并提交直播预约，等待管理员审核',
   '/farmer/queues': '时段已满可加入排队，场地释放后自动升级候补',
   '/live/queues': '查看各场地时段排队情况，必要时关闭队列',
   '/live/sales': '按已完成场次录入卖出的农产品数量',
