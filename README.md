@@ -156,7 +156,7 @@ npm run build
 | 账号 | `GET/POST/PUT/DELETE /api/admin/accounts` |
 | 农户 | `GET/POST/PUT/DELETE /api/admin/farmers` |
 | 场地 | `GET/POST/PUT/DELETE /api/admin/venues` |
-| 设备 | `GET/POST/PUT/DELETE /api/admin/devices` |
+| 设备组合 | `GET/POST/PUT/DELETE /api/admin/devices` |
 
 完整字段见 `docs/02_设计/09-接口文档-正式版.md`。
 

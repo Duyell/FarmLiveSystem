@@ -53,7 +53,7 @@ const cards = ref([
   { key: 'pendingReview' as const, label: '待审核预约', icon: Warning, bg: '#fff5e6' },
   { key: 'todayLive' as const, label: '今日直播', icon: Calendar, bg: '#e8f0fe' },
   { key: 'availableVenues' as const, label: '可用场地', icon: OfficeBuilding, bg: '#e8f4e4' },
-  { key: 'availableDevices' as const, label: '可用设备', icon: Monitor, bg: '#f3e8ff' },
+  { key: 'availableDevices' as const, label: '可用设备组合', icon: Monitor, bg: '#f3e8ff' },
   { key: 'bookings' as const, label: '预约总数', icon: Tickets, bg: '#e6fffb' },
   { key: 'farmers' as const, label: '农户', icon: Avatar, bg: '#f7faf5' }
 ])

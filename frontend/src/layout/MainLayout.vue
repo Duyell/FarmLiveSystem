@@ -141,10 +141,10 @@ const pageTitleByPath: Record<string, string> = {
 }
 
 const pageSubtitleByPath: Record<string, string> = {
-  '/dashboard': '汇总账号、农户、场地、设备和预约数据',
-  '/bookings': '审核农户提交的直播预约，通过后锁定场地和设备',
+  '/dashboard': '汇总账号、农户、场地、设备组合和预约数据',
+  '/bookings': '审核农户提交的直播预约，通过后锁定场地和设备组合',
   '/live/adjustments': '审批农户提交的改期申请',
-  '/basic-info': '管理农户信息、直播设备和场地等基础数据',
+  '/basic-info': '管理农户信息、直播设备组合和场地等基础数据',
   '/accounts': '管理系统账号和角色权限',
   '/farmer/bookings': '查看和管理您的直播预约状态',
   '/farmer/bookings/new': '填写并提交直播预约，等待管理员审核',

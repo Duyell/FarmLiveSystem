@@ -63,15 +63,21 @@
           <div v-if="!form.countyCode" class="field-hint">请先选择所属县域</div>
           <div v-else-if="venuesLoaded && venues.length === 0" class="field-hint">该区域和时段没有可用场地</div>
         </el-form-item>
-        <el-form-item label="直播设备" required>
-          <el-select v-model="form.deviceId" placeholder="选择设备" style="width: 100%">
+        <el-form-item label="直播设备组合" required>
+          <el-select v-model="form.deviceId" placeholder="选择设备组合" style="width: 100%">
             <el-option
               v-for="device in devices"
               :key="device.deviceId"
               :label="`${device.name}（${device.deviceNo}）`"
               :value="device.deviceId"
-            />
+            >
+              <div class="device-option-name">{{ device.name }}（{{ device.deviceNo }}）</div>
+              <div class="device-option-config">{{ device.config || '未配置组合内容' }}</div>
+            </el-option>
           </el-select>
+          <div v-if="selectedDevice" class="field-hint">
+            组合配置：{{ selectedDevice.config || '未配置组合内容' }}
+          </div>
         </el-form-item>
         <el-form-item>
           <el-button @click="reset">重置</el-button>
@@ -114,6 +120,10 @@ const venues = ref<AvailableVenue[]>([])
 const devices = ref<AvailableDevice[]>([])
 const venuesLoaded = ref(false)
 const saving = ref(false)
+
+const selectedDevice = computed(() =>
+  devices.value.find((device) => device.deviceId === form.deviceId)
+)
 
 const farmerLabel = computed(() => (user?.farmerName ? `${user.farmerName}（${user.username}）` : user?.username ?? ''))
 
@@ -199,7 +209,7 @@ async function submit() {
     return
   }
   if (!form.venueId || !form.deviceId) {
-    ElMessage.warning('请选择场地和设备')
+    ElMessage.warning('请选择场地和设备组合')
     return
   }
   saving.value = true
@@ -290,5 +300,16 @@ function reset() {
   margin-top: 6px;
   font-size: 12px;
   color: #8a94a6;
+}
+
+.device-option-name {
+  color: #1f3b25;
+  line-height: 1.5;
+}
+
+.device-option-config {
+  color: #8a94a6;
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

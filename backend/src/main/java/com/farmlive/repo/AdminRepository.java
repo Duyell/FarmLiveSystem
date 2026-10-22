@@ -217,7 +217,7 @@ public class AdminRepository {
         if (keyword != null && !keyword.isBlank()) {
             where.append(" WHERE (farmer_no LIKE ? OR name LIKE ? OR county LIKE ? OR phone LIKE ?) ");
             String like = "%" + keyword.trim() + "%";
-            for (int i = 0; i < 4; i++) args.add(like);
+            for (int i = 0; i < 5; i++) args.add(like);
         }
         if (countyCode != null && !countyCode.isBlank()) {
             where.append(where.length() == 0 ? " WHERE county_code = ? " : " AND county_code = ? ");
@@ -361,16 +361,16 @@ public class AdminRepository {
 
     public PageResult<Dtos.DeviceView> listDevices(String keyword, int page, int size) {
         String where = keyword == null || keyword.isBlank() ? "" :
-                " WHERE (d.device_no LIKE ? OR d.name LIKE ? OR d.model LIKE ? OR v.name LIKE ?) ";
+                " WHERE (d.device_no LIKE ? OR d.name LIKE ? OR d.model LIKE ? OR d.config LIKE ? OR v.name LIKE ?) ";
         List<Object> args = new ArrayList<>();
         if (!where.isBlank()) {
             String like = "%" + keyword.trim() + "%";
-            for (int i = 0; i < 4; i++) args.add(like);
+            for (int i = 0; i < 5; i++) args.add(like);
         }
         String base = " FROM device d JOIN venue v ON v.id = d.venue_id " + where;
         Long total = jdbc.queryForObject("SELECT COUNT(*) " + base, Long.class, args.toArray());
         List<Dtos.DeviceView> items = jdbc.query("""
-                SELECT d.id, d.device_no, d.name, d.model, d.venue_id, v.name AS venue_name,
+                SELECT d.id, d.device_no, d.name, d.model, d.config, d.venue_id, v.name AS venue_name,
                        d.status, d.calibration_date, d.created_at
                 """ + base + " ORDER BY d.id DESC LIMIT ? OFFSET ?",
                 deviceMapper, append(args, size, (page - 1) * size).toArray());
@@ -379,40 +379,41 @@ public class AdminRepository {
 
     public Optional<Dtos.DeviceView> findDevice(Long id) {
         return jdbc.query("""
-                SELECT d.id, d.device_no, d.name, d.model, d.venue_id, v.name AS venue_name,
+                SELECT d.id, d.device_no, d.name, d.model, d.config, d.venue_id, v.name AS venue_name,
                        d.status, d.calibration_date, d.created_at
                 FROM device d JOIN venue v ON v.id = d.venue_id
                 WHERE d.id = ?
                 """, deviceMapper, id).stream().findFirst();
     }
 
-    public Long createDevice(String deviceNo, String name, String model, Long venueId,
+    public Long createDevice(String deviceNo, String name, String model, String config, Long venueId,
                              String status, LocalDate calibrationDate) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbc.update(con -> {
             PreparedStatement ps = con.prepareStatement("""
-                    INSERT INTO device (device_no, name, model, venue_id, status, calibration_date)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO device (device_no, name, model, config, venue_id, status, calibration_date)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     """, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, deviceNo);
             ps.setString(2, name);
             ps.setString(3, model);
-            ps.setLong(4, venueId);
-            ps.setString(5, status);
-            if (calibrationDate == null) ps.setNull(6, java.sql.Types.DATE);
-            else ps.setDate(6, Date.valueOf(calibrationDate));
+            ps.setString(4, config);
+            ps.setLong(5, venueId);
+            ps.setString(6, status);
+            if (calibrationDate == null) ps.setNull(7, java.sql.Types.DATE);
+            else ps.setDate(7, Date.valueOf(calibrationDate));
             return ps;
         }, keyHolder);
         Number key = keyHolder.getKey();
         return key == null ? null : key.longValue();
     }
 
-    public void updateDevice(Long id, String name, String model, Long venueId,
+    public void updateDevice(Long id, String name, String model, String config, Long venueId,
                              String status, LocalDate calibrationDate) {
         jdbc.update("""
-                UPDATE device SET name = ?, model = ?, venue_id = ?, status = ?, calibration_date = ?
+                UPDATE device SET name = ?, model = ?, config = ?, venue_id = ?, status = ?, calibration_date = ?
                 WHERE id = ?
-                """, name, model, venueId, status,
+                """, name, model, config, venueId, status,
                 calibrationDate == null ? null : Date.valueOf(calibrationDate), id);
     }
 
@@ -516,6 +517,7 @@ public class AdminRepository {
             rs.getString("device_no"),
             rs.getString("name"),
             rs.getString("model"),
+            rs.getString("config"),
             rs.getLong("venue_id"),
             rs.getString("venue_name"),
             rs.getString("status"),

@@ -319,9 +319,10 @@ public class AdminController {
         String status = normalizeResourceStatus(request.status());
         LocalDate calibration = parseDate(request.calibrationDate());
         Long id = repository.createDevice(request.deviceNo().trim(), request.name().trim(),
-                trimToNull(request.model()), request.venueId(), status, calibration);
+                trimToNull(request.model()), trimToNull(request.config()),
+                request.venueId(), status, calibration);
         auditService.recordCurrent("DEVICE_CREATE",
-                "创建设备 " + request.deviceNo().trim() + " / " + request.name().trim());
+                "创建设备组合 " + request.deviceNo().trim() + " / " + request.name().trim());
         return ApiResponse.ok(repository.findDevice(id)
                 .orElseThrow(() -> BusinessException.notFound("设备创建失败")));
     }
@@ -337,13 +338,13 @@ public class AdminController {
         String status = normalizeResourceStatus(request.status());
         LocalDate calibration = parseDate(request.calibrationDate());
         repository.updateDevice(id, request.name().trim(), trimToNull(request.model()),
-                request.venueId(), status, calibration);
+                trimToNull(request.config()), request.venueId(), status, calibration);
         if (!"maintenance".equals(existing.status()) && !"disabled".equals(existing.status())
                 && ("maintenance".equals(status) || "disabled".equals(status))) {
             notificationService.notifyDeviceFault(id, existing.name());
         }
         auditService.recordCurrent("DEVICE_UPDATE",
-                "设备 " + existing.deviceNo() + "：" + existing.name() + " -> " + request.name().trim()
+                "设备组合 " + existing.deviceNo() + "：" + existing.name() + " -> " + request.name().trim()
                         + "，场地 " + existing.venueId() + " -> " + request.venueId()
                         + "，状态 " + existing.status() + " -> " + status
                         + "，校准 " + existing.calibrationDate() + " -> " + request.calibrationDate()

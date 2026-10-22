@@ -32,6 +32,7 @@ export interface AvailableDevice {
   deviceId: number
   deviceNo: string
   name: string
+  config: string | null
 }
 
 export interface AvailableVenue {

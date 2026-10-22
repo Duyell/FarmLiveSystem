@@ -1,7 +1,7 @@
 <template>
   <div>
     <h2 class="page-title">场地管理</h2>
-    <p class="page-subtitle">场地是主资源，同一场地同一时段只能做一场直播；设备必须归属场地。</p>
+    <p class="page-subtitle">场地是主资源，同一场地同一时段只能做一场直播；设备组合必须归属场地。</p>
 
     <div class="page-card">
       <div class="page-toolbar">

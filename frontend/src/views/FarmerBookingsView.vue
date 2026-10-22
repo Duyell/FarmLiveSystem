@@ -129,14 +129,17 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="新设备">
-          <el-select v-model="adjustForm.deviceId" placeholder="选择场地内设备" style="width: 100%">
+        <el-form-item label="新设备组合">
+          <el-select v-model="adjustForm.deviceId" placeholder="选择场地内设备组合" style="width: 100%">
             <el-option
               v-for="item in availableDevices"
               :key="item.deviceId"
               :label="`${item.name}（${item.deviceNo}）`"
               :value="item.deviceId"
-            />
+            >
+              <div>{{ item.name }}（{{ item.deviceNo }}）</div>
+              <div class="device-config">{{ item.config || '未配置组合内容' }}</div>
+            </el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="调整原因">
@@ -231,7 +234,7 @@ async function submitAdjust() {
     return
   }
   if (!adjustForm.venueId || !adjustForm.deviceId) {
-    ElMessage.warning('请选择新场地和设备')
+    ElMessage.warning('请选择新场地和设备组合')
     return
   }
   if (!adjustForm.reason.trim()) {
@@ -384,5 +387,11 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   width: 100%;
+}
+
+.device-config {
+  color: #8a94a6;
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

@@ -118,7 +118,8 @@ public final class Dtos {
     public record AvailableDeviceView(
             Long deviceId,
             String deviceNo,
-            String name
+            String name,
+            String config
     ) {
     }
 
@@ -301,6 +302,7 @@ public final class Dtos {
             String deviceNo,
             String name,
             String model,
+            String config,
             Long venueId,
             String venueName,
             String status,
@@ -310,9 +312,10 @@ public final class Dtos {
     }
 
     public record DeviceRequest(
-            @NotBlank(message = "设备编号不能为空") String deviceNo,
-            @NotBlank(message = "设备名称不能为空") String name,
+            @NotBlank(message = "组合编号不能为空") String deviceNo,
+            @NotBlank(message = "组合名称不能为空") String name,
             String model,
+            String config,
             @NotNull(message = "所属场地不能为空") Long venueId,
             String status,
             String calibrationDate,

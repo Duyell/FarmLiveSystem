@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS device (
   device_no VARCHAR(40) NOT NULL UNIQUE,
   name VARCHAR(80) NOT NULL,
   model VARCHAR(80) NULL,
+  config VARCHAR(500) NULL COMMENT '组合包含的设备配置',
   venue_id BIGINT NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'available',
   calibration_date DATE NULL,
@@ -140,7 +141,7 @@ CREATE TABLE IF NOT EXISTS device (
   CONSTRAINT fk_device_venue FOREIGN KEY (venue_id) REFERENCES venue(id),
   INDEX idx_device_venue (venue_id),
   INDEX idx_device_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='直播设备，必须属于一个场地';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='直播设备组合，必须属于一个场地';
 
 -- ============================================================
 -- 7. 预约
@@ -423,11 +424,14 @@ VALUES
   (2, 'C002', '二号直播间', '寿县电商中心二楼', '340422', 15, '09:00:00', '18:00:00', 'available');
 
 INSERT IGNORE INTO device
-  (id, device_no, name, model, venue_id, status, calibration_date)
+  (id, device_no, name, model, config, venue_id, status, calibration_date)
 VALUES
-  (1, 'ZB-C001-01', '主摄像机', 'CAM-4K', 1, 'available', '2026-12-31'),
-  (2, 'ZB-C001-02', '补光灯', 'LIGHT-200', 1, 'available', '2026-12-31'),
-  (3, 'ZB-C002-01', '主摄像机', 'CAM-1080P', 2, 'available', '2026-12-31');
+  (1, 'ZB-C001-01', '设备组合1', '手机直播组合',
+   '手机 + 三脚架 + 双补光灯 + 无线领夹麦 + 5G 路由 + 插排', 1, 'available', '2026-12-31'),
+  (2, 'ZB-C001-02', '设备组合2', '补光增强组合',
+   '手机 + 三脚架 + 三补光灯 + 无线领夹麦 + 5G 路由 + UPS', 1, 'available', '2026-12-31'),
+  (3, 'ZB-C002-01', '设备组合3', '基础直播组合',
+   '手机 + 三脚架 + 双补光灯 + 无线领夹麦 + 场地宽带 + 插排', 2, 'available', '2026-12-31');
 
 -- 完成
 SELECT 'farm_live init done' AS result;

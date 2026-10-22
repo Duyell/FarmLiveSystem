@@ -1,7 +1,7 @@
 <template>
   <div>
     <h2 class="page-title">直播排队与候补</h2>
-    <p class="page-subtitle">时段被占满时可加入排队；场地释放后队首自动升级为候补，确认后分配设备生成预约。</p>
+    <p class="page-subtitle">时段被占满时可加入排队；场地释放后队首自动升级为候补，确认后分配设备组合生成预约。</p>
 
     <div class="stat-row">
       <div class="stat-card">
@@ -96,7 +96,7 @@
             请在 {{ row.candidateDeadline }} 前确认，超时自动顺延
           </span>
           <span v-if="row.status === 'confirmed' && row.assignedDeviceName">
-            已分配设备：{{ row.assignedDeviceName }}，预约已生成
+            已分配设备组合：{{ row.assignedDeviceName }}，预约已生成
           </span>
         </div>
         <div v-if="row.status === 'candidate'" class="queue-actions">
@@ -234,7 +234,7 @@ async function confirmIt(row: QueueTicket) {
   acting.value = true
   try {
     const result = await confirmQueue(row.id)
-    ElMessage.success(`候补确认成功，已分配设备并生成预约（单号 ${result.confirmedBookingId}）`)
+    ElMessage.success(`候补确认成功，已分配设备组合并生成预约（单号 ${result.confirmedBookingId}）`)
     await load()
   } catch (error) {
     ElMessage.error((error as Error).message)

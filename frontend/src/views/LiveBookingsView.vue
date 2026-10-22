@@ -1,7 +1,7 @@
 <template>
   <div>
     <h2 class="page-title">直播预约管理</h2>
-    <p class="page-subtitle">审核农户提交的直播预约；通过后锁定场地和设备资源。</p>
+    <p class="page-subtitle">审核农户提交的直播预约；通过后锁定场地和设备组合资源。</p>
 
     <div class="page-card">
       <div class="page-toolbar">
@@ -72,7 +72,7 @@
           <el-descriptions-item label="预约单号">{{ current.bookingNo }}</el-descriptions-item>
           <el-descriptions-item label="农户">{{ current.farmerName }}</el-descriptions-item>
           <el-descriptions-item label="场地">{{ current.venueName }}</el-descriptions-item>
-          <el-descriptions-item label="设备">{{ current.deviceName }}（{{ current.deviceNo }}）</el-descriptions-item>
+          <el-descriptions-item label="设备组合">{{ current.deviceName }}（{{ current.deviceNo }}）</el-descriptions-item>
           <el-descriptions-item label="时段" :span="2">
             {{ current.startTime }} 至 {{ current.endTime }}
           </el-descriptions-item>

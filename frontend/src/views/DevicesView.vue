@@ -1,27 +1,31 @@
 <template>
   <div>
-    <h2 class="page-title">设备管理</h2>
-    <p class="page-subtitle">每台设备必须归属一个场地，设备编号建议按「ZB-场地编号-序号」。</p>
+    <h2 class="page-title">设备组合管理</h2>
+    <p class="page-subtitle">每个组合是一套完整直播设备，组合内不再拆成单个补光灯或摄像机；组合必须归属一个场地。</p>
 
     <div class="page-card">
       <div class="page-toolbar">
-        <el-input v-model="keyword" placeholder="搜索设备编号 / 名称 / 型号 / 场地" clearable style="width: 280px" @keyup.enter="load" />
+        <el-input v-model="keyword" placeholder="搜索组合编号 / 名称 / 配置 / 场地" clearable style="width: 280px" @keyup.enter="load" />
         <el-button type="primary" @click="load">查询</el-button>
-        <el-button @click="openCreate">新增设备</el-button>
+        <el-button @click="openCreate">新增设备组合</el-button>
       </div>
 
       <el-table :data="rows" v-loading="loading" border stripe>
-        <el-table-column prop="deviceNo" label="设备编号" width="140" />
-        <el-table-column prop="name" label="名称" width="130" />
-        <el-table-column prop="model" label="型号" width="130" />
-        <el-table-column prop="venueName" label="所属场地" width="150" />
-        <el-table-column label="状态" width="100">
+        <el-table-column prop="deviceNo" label="组合编号" width="130" />
+        <el-table-column label="设备组合" min-width="220">
+          <template #default="{ row }">
+            <div>{{ row.name }}</div>
+            <div class="config-text">{{ row.config || '未配置组合内容' }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="venueName" label="所属场地" width="140" />
+        <el-table-column label="状态" width="90">
           <template #default="{ row }">
             <el-tag :type="statusTag(row.status)">{{ statusLabel(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="calibrationDate" label="下次校准" width="120" />
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column prop="calibrationDate" label="下次校准" width="110" />
+        <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="remove(row)">删除</el-button>
@@ -40,16 +44,26 @@
       />
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑设备' : '新增设备'" width="520px">
-      <el-form :model="form" label-width="90px">
-        <el-form-item label="设备编号">
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑设备组合' : '新增设备组合'" width="560px">
+      <el-form :model="form" label-width="100px">
+        <el-form-item label="组合编号">
           <el-input v-model="form.deviceNo" :disabled="isEdit" placeholder="如 ZB-C001-03" />
         </el-form-item>
-        <el-form-item label="设备名称">
-          <el-input v-model="form.name" />
+        <el-form-item label="组合名称">
+          <el-input v-model="form.name" placeholder="如 设备组合3" />
         </el-form-item>
-        <el-form-item label="型号">
-          <el-input v-model="form.model" />
+        <el-form-item label="组合型号">
+          <el-input v-model="form.model" placeholder="如 手机直播组合" />
+        </el-form-item>
+        <el-form-item label="组合配置">
+          <el-input
+            v-model="form.config"
+            type="textarea"
+            :rows="3"
+            maxlength="500"
+            show-word-limit
+            placeholder="如 手机 + 三脚架 + 双补光灯 + 无线领夹麦 + 5G 路由 + 插排"
+          />
         </el-form-item>
         <el-form-item label="所属场地">
           <el-select v-model="form.venueId" style="width: 100%" placeholder="请选择场地">
@@ -94,6 +108,7 @@ interface Device {
   deviceNo: string
   name: string
   model: string | null
+  config: string | null
   venueId: number
   venueName: string
   status: string
@@ -117,6 +132,7 @@ const form = reactive({
   deviceNo: '',
   name: '',
   model: '',
+  config: '',
   venueId: 0,
   status: 'available',
   calibrationDate: '',
@@ -164,6 +180,7 @@ function openCreate() {
     deviceNo: '',
     name: '',
     model: '',
+    config: '',
     venueId: venues.value[0]?.id || 0,
     status: 'available',
     calibrationDate: '',
@@ -179,6 +196,7 @@ function openEdit(row: Device) {
     deviceNo: row.deviceNo,
     name: row.name,
     model: row.model || '',
+    config: row.config || '',
     venueId: row.venueId,
     status: row.status,
     calibrationDate: row.calibrationDate || '',
@@ -189,7 +207,7 @@ function openEdit(row: Device) {
 
 async function save() {
   if (!form.deviceNo.trim() || !form.name.trim() || !form.venueId) {
-    ElMessage.warning('请把设备编号、名称、所属场地填完整')
+    ElMessage.warning('请把组合编号、名称、所属场地填完整')
     return
   }
   saving.value = true
@@ -198,6 +216,7 @@ async function save() {
       deviceNo: form.deviceNo,
       name: form.name,
       model: form.model,
+      config: form.config,
       venueId: form.venueId,
       status: form.status,
       calibrationDate: form.calibrationDate || null,
@@ -205,10 +224,10 @@ async function save() {
     }
     if (isEdit.value) {
       await put(`/live/devices/${form.id}`, payload)
-      ElMessage.success('设备已更新')
+      ElMessage.success('设备组合已更新')
     } else {
       await post('/live/devices', payload)
-      ElMessage.success('设备已创建')
+      ElMessage.success('设备组合已创建')
     }
     dialogVisible.value = false
     await load()
@@ -221,9 +240,9 @@ async function save() {
 
 async function remove(row: Device) {
   try {
-    await ElMessageBox.confirm(`确定删除设备「${row.name}」吗？`, '删除确认', { type: 'warning' })
+    await ElMessageBox.confirm(`确定删除设备组合「${row.name}」吗？`, '删除确认', { type: 'warning' })
     await del(`/live/devices/${row.id}`)
-    ElMessage.success('设备已删除')
+    ElMessage.success('设备组合已删除')
     await load()
   } catch (error) {
     if (error !== 'cancel' && error !== 'close') {
@@ -247,5 +266,12 @@ onMounted(async () => {
 .pager {
   margin-top: 16px;
   justify-content: flex-end;
+}
+
+.config-text {
+  margin-top: 3px;
+  color: #8a94a6;
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

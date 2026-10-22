@@ -7,7 +7,7 @@
       <el-tab-pane label="直播场地管理" name="venues">
         <VenuesView />
       </el-tab-pane>
-      <el-tab-pane label="直播设备管理" name="devices">
+      <el-tab-pane label="直播设备组合" name="devices">
         <DevicesView />
       </el-tab-pane>
     </el-tabs>

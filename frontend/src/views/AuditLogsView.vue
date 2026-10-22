@@ -23,7 +23,7 @@
           <el-option label="农户新增" value="FARMER_CREATE" />
           <el-option label="农户修改" value="FARMER_UPDATE" />
           <el-option label="场地修改" value="VENUE_UPDATE" />
-          <el-option label="设备修改" value="DEVICE_UPDATE" />
+          <el-option label="设备组合修改" value="DEVICE_UPDATE" />
         </el-select>
         <el-date-picker
           v-model="range"

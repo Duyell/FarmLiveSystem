@@ -268,7 +268,7 @@ public class BookingRepository {
                 busyDeviceIds.stream().map(id -> "?").collect(Collectors.joining(",")) + ")";
         busyDeviceIds.forEach(deviceArgs::add);
         List<Map<String, Object>> rows = jdbc.queryForList("""
-                        SELECT id, venue_id, device_no, name FROM device
+                        SELECT id, venue_id, device_no, name, config FROM device
                         WHERE status = 'available' AND venue_id IN (""" + in + ")" + deviceFilter +
                         " ORDER BY id", deviceArgs.toArray());
         Map<Long, List<Dtos.AvailableDeviceView>> byVenue = rows.stream().collect(Collectors.groupingBy(
@@ -276,7 +276,8 @@ public class BookingRepository {
                 Collectors.mapping(r -> new Dtos.AvailableDeviceView(
                         ((Number) r.get("id")).longValue(),
                         (String) r.get("device_no"),
-                        (String) r.get("name")), Collectors.toList())));
+                        (String) r.get("name"),
+                        (String) r.get("config")), Collectors.toList())));
         return venues.stream()
                 .map(v -> new Dtos.AvailableVenueView(v.venueId(), v.venueNo(), v.venueName(),
                         v.countyCode(), v.openStart(), v.openEnd(),
