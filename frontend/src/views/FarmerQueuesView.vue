@@ -91,7 +91,7 @@
           />
         </div>
         <div class="queue-meta">
-          <span v-if="row.status === 'queued'">预计等待 {{ row.estimatedWait }} 场</span>
+          <span v-if="row.status === 'queued'">前面还有 {{ row.estimatedWait }} 人，场地释放后按顺位通知</span>
           <span v-if="row.status === 'candidate' && row.candidateDeadline" class="deadline">
             请在 {{ row.candidateDeadline }} 前确认，超时自动顺延
           </span>
