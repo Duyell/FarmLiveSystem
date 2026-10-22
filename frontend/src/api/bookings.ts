@@ -47,6 +47,7 @@ export interface AvailableVenue {
 
 export const BOOKING_STATUS: Record<string, { label: string; type: 'warning' | 'success' | 'danger' | 'info' }> = {
   pending_review: { label: '待审核', type: 'warning' },
+  queued: { label: '排队中', type: 'warning' },
   approved: { label: '已通过', type: 'success' },
   rejected: { label: '已驳回', type: 'danger' },
   canceled: { label: '已取消', type: 'info' },
