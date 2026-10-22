@@ -62,19 +62,13 @@ mvn spring-boot:run
 默认连接：
 
 ```text
-127.0.0.1:3308 / farm_live / farmlive / farmlive123
+127.0.0.1:3306 / FarmLiveSys / farmlive / farmlive123
 ```
 
-如果本机 MySQL 是 3306，用：
-
-```bash
-DB_PORT=3306 mvn spring-boot:run
-```
-
-Windows PowerShell：
+当前演示库是 `FarmLiveSys`。如果重新执行 `init.sql` 创建的是 `farm_live`，用环境变量切换：
 
 ```powershell
-$env:DB_PORT="3306"
+$env:DB_NAME="farm_live"
 mvn spring-boot:run
 ```
 
