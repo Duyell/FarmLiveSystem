@@ -101,8 +101,15 @@
       />
       <el-form :model="faultForm" label-width="80px" class="fault-form">
         <el-form-item label="故障部位">
-          <el-select v-model="faultForm.faultPart" :disabled="!!activeFault" style="width: 220px">
-            <el-option v-for="part in ['补光灯', '无线领夹麦', '手机', '三脚架', '5G 路由', '其他']" :key="part" :label="part" :value="part" />
+          <el-select
+            v-model="faultForm.faultPart"
+            :disabled="!!activeFault"
+            filterable
+            allow-create
+            default-first-option
+            style="width: 260px"
+          >
+            <el-option v-for="part in faultPartOptions" :key="part" :label="part" :value="part" />
           </el-select>
         </el-form-item>
         <el-form-item label="故障描述">
@@ -197,6 +204,14 @@ const faultForm = reactive({
   description: ''
 })
 const activeFault = computed(() => faults.value.find((item) => item.status !== 'resolved'))
+const faultPartOptions = computed(() => {
+  const base = ['补光灯', '无线领夹麦', '手机', '三脚架', '5G 路由', '插排', '其他']
+  const fromConfig = (faultDevice.value?.config || '')
+    .split('+')
+    .map((part) => part.trim())
+    .filter(Boolean)
+  return Array.from(new Set([...fromConfig, ...base]))
+})
 
 const form = reactive({
   id: 0,
