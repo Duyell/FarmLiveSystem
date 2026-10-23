@@ -18,6 +18,10 @@ export async function listRegions(parentCode?: string): Promise<Region[]> {
   return get<Region[]>('/regions', parentCode ? { parentCode } : undefined)
 }
 
+export async function listAllRegions(): Promise<Region[]> {
+  return get<Region[]>('/regions/all')
+}
+
 let treeCache: RegionOption[] | null = null
 
 /**
@@ -36,20 +40,22 @@ export function findRegionPath(countyCode: string): RegionOption[] | null {
 }
 
 /**
- * 加载省 / 市 / 县完整树。
- * 区域是字典级数据（当前仅安徽省 / 淮南市），一次性加载后全项目缓存，
- * 保证编辑回显时级联能直接定位到县一级。
+ * 一次拉取全部启用区域，在本地组树；全国数据也只发一个请求。
  */
 export async function loadRegionTree(): Promise<RegionOption[]> {
   if (treeCache) return treeCache
-  const provinces: RegionOption[] = await listRegions()
-  for (const province of provinces) {
-    const cities: RegionOption[] = await listRegions(province.code)
-    for (const city of cities) {
-      city.children = await listRegions(city.code)
-    }
-    province.children = cities
+  const all = await listAllRegions()
+  const byParent = new Map<string | null, RegionOption[]>()
+  for (const region of all) {
+    const node: RegionOption = { ...region, children: [] }
+    const list = byParent.get(region.parentCode) ?? []
+    list.push(node)
+    byParent.set(region.parentCode, list)
   }
-  treeCache = provinces
+  for (const region of all) {
+    const node = byParent.get(region.parentCode)?.find((item) => item.code === region.code)
+    if (node) node.children = byParent.get(region.code) ?? []
+  }
+  treeCache = byParent.get(null) ?? []
   return treeCache
 }

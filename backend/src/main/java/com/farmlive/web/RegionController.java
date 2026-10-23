@@ -32,4 +32,9 @@ public class RegionController {
         String parent = (parentCode == null || parentCode.isBlank()) ? null : parentCode.trim();
         return ApiResponse.ok(repository.listChildren(parent));
     }
+
+    @GetMapping("/all")
+    public ApiResponse<List<Dtos.RegionView>> all() {
+        return ApiResponse.ok(repository.listAll());
+    }
 }

@@ -35,6 +35,18 @@ public class RegionRepository {
     }
 
     /**
+     * 一次返回全部启用区域，供前端本地组树，避免逐级请求。
+     */
+    public List<Dtos.RegionView> listAll() {
+        return jdbc.query("""
+                SELECT code, parent_code, level, name
+                FROM region
+                WHERE enabled = 1
+                ORDER BY level, code
+                """, viewMapper);
+    }
+
+    /**
      * 按编码查询区域（不管是否启用），用于保存前的校验和名称快照。
      */
     public Optional<RegionRow> findRowByCode(String code) {

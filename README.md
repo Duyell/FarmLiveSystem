@@ -42,11 +42,19 @@ mysql -uroot -p < init.sql
 
 - 数据库 `farm_live`；
 - 开发用户 `farmlive`，密码 `farmlive123`；
-- 18 张表；
+- 19 张表；
 - 四种角色；
 - 系统管理员：`admin / Admin@123`，首次登录必须改密；
-- 安徽省 / 淮南市 / 寿县等区域字典数据；
+- 安徽省 / 淮南市 / 寿县等试点区域数据；
 - 演示农户、场地、设备。
+
+全国省/市/区县数据（含港澳台，3,783 条）单独导入：
+
+```bash
+mysql -uroot -p FarmLiveSys < deploy/data/regions-national.sql
+```
+
+港澳台第二级使用地理分区，第三级为区/县/市；不导入乡镇/街道。
 
 > 如果本机 MySQL 不在 3306，用环境变量指定端口，见下一节。
 
