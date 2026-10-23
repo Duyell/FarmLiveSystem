@@ -39,6 +39,9 @@
           <span class="time-sep">至</span>
           <el-time-select v-model="joinForm.endTime" start="07:00" step="01:00" end="22:00" placeholder="结束" style="width: 110px" />
         </el-form-item>
+        <el-form-item label="直播主题">
+          <el-input v-model="joinForm.topic" placeholder="例如：寿县草莓采摘专场" style="width: 220px" maxlength="120" />
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" :loading="checking" @click="check">查询状态</el-button>
         </el-form-item>
@@ -82,6 +85,7 @@
           <el-tag :type="statusMeta(row.status).type">{{ statusMeta(row.status).label }}</el-tag>
         </div>
         <div class="queue-slot">{{ row.slotStart }} 至 {{ row.slotEnd.slice(11) }}</div>
+        <div v-if="row.bookingNo" class="queue-booking">对应预约：{{ row.bookingNo }}</div>
         <div v-if="row.status === 'queued' || row.status === 'candidate'" class="progress-row">
           <span class="progress-label">当前顺位 {{ row.position }}/{{ row.totalInQueue }}</span>
           <el-progress
@@ -140,7 +144,8 @@ const joinForm = reactive({
   venueId: undefined as number | undefined,
   date: '',
   startTime: '',
-  endTime: ''
+  endTime: '',
+  topic: ''
 })
 
 const counts = computed(() => ({
@@ -187,9 +192,17 @@ function slotPayload() {
   }
 }
 
+function joinPayload() {
+  return { ...slotPayload(), topic: joinForm.topic.trim() }
+}
+
 function formReady() {
   if (!joinForm.venueId || !joinForm.date || !joinForm.startTime || !joinForm.endTime) {
     ElMessage.warning('请把场地、日期、时段选完整')
+    return false
+  }
+  if (!joinForm.topic.trim()) {
+    ElMessage.warning('请填写直播主题')
     return false
   }
   if (joinForm.startTime >= joinForm.endTime) {
@@ -219,7 +232,7 @@ async function join() {
   if (!formReady()) return
   joining.value = true
   try {
-    const ticket = await joinQueue(slotPayload())
+    const ticket = await joinQueue(joinPayload())
     ElMessage.success(`已加入排队：${ticket.queueNo}，当前顺位第 ${ticket.position} 位`)
     status.value = null
     await load()
@@ -390,6 +403,12 @@ onMounted(() => {
   font-size: 13px;
   color: #5e6d82;
   margin-top: 6px;
+}
+
+.queue-booking {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #8a94a6;
 }
 
 .progress-row {

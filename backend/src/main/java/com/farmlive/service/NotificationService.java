@@ -143,6 +143,20 @@ public class NotificationService {
         }
     }
 
+    public void notifyDeviceFaultCanceled(Long deviceId, String deviceName) {
+        for (NotificationRepository.EventTarget target : repository.deviceFaultTargets(deviceId)) {
+            sendEvent(target.accountId(), "device_fault", "device_fault_canceled",
+                    "device_fault_canceled:" + target.bookingNo(), Map.of(
+                    "farmerName", target.farmerName(),
+                    "topic", target.topic(),
+                    "startTime", target.startTime(),
+                    "venueName", target.venueName(),
+                    "deviceName", deviceName,
+                    "bookingNo", target.bookingNo()
+            ));
+        }
+    }
+
     /**
      * 按农户档案发送（自动解析农户登录账号；未关联账号则跳过）。
      */

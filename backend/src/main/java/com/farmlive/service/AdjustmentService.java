@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -25,13 +26,16 @@ public class AdjustmentService {
     private final AdjustmentRepository repository;
     private final BookingRepository bookingRepository;
     private final AuditService auditService;
+    private final NotificationService notificationService;
 
     public AdjustmentService(AdjustmentRepository repository,
                              BookingRepository bookingRepository,
-                             AuditService auditService) {
+                             AuditService auditService,
+                             NotificationService notificationService) {
         this.repository = repository;
         this.bookingRepository = bookingRepository;
         this.auditService = auditService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -119,12 +123,25 @@ public class AdjustmentService {
             bookingRepository.updateResources(booking.id(), view.newVenueId(), view.newDeviceId(), start, end);
             repository.updateStatus(id, "approved", comment, LocalDateTime.now());
             auditService.record(user, "BOOKING_ADJUST_APPROVE", "通过调整申请 " + view.requestNo());
+            notificationService.notifyFarmer(view.farmerId(), "review", "adjustment_approved",
+                    "adjustment_approved:" + view.requestNo(), Map.of(
+                            "farmerName", view.farmerName() == null ? "" : view.farmerName(),
+                            "bookingNo", view.bookingNo() == null ? "" : view.bookingNo(),
+                            "startTime", view.newStartTime() == null ? "" : view.newStartTime(),
+                            "venueName", view.newVenueName() == null ? "" : view.newVenueName()
+                    ));
         } else if ("reject".equals(result)) {
             if (comment == null || comment.length() < 5) {
                 throw BusinessException.badRequest("驳回意见至少 5 个字");
             }
             repository.updateStatus(id, "rejected", comment, LocalDateTime.now());
             auditService.record(user, "BOOKING_ADJUST_REJECT", "驳回调整申请 " + view.requestNo());
+            notificationService.notifyFarmer(view.farmerId(), "review", "adjustment_rejected",
+                    "adjustment_rejected:" + view.requestNo(), Map.of(
+                            "farmerName", view.farmerName() == null ? "" : view.farmerName(),
+                            "bookingNo", view.bookingNo() == null ? "" : view.bookingNo(),
+                            "reviewComment", comment
+                    ));
         } else {
             throw BusinessException.badRequest("审核结果只能是 approve 或 reject");
         }

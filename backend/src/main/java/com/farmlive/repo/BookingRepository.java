@@ -55,7 +55,7 @@ public class BookingRepository {
             FROM booking b
             JOIN farmer f ON f.id = b.farmer_id
             JOIN venue v ON v.id = b.venue_id
-            JOIN device d ON d.id = b.device_id
+            LEFT JOIN device d ON d.id = b.device_id
             """;
 
     private final RowMapper<Dtos.BookingView> viewMapper = (rs, rowNum) -> new Dtos.BookingView(
@@ -65,7 +65,7 @@ public class BookingRepository {
             rs.getString("farmer_name"),
             rs.getLong("venue_id"),
             rs.getString("venue_name"),
-            rs.getLong("device_id"),
+            rs.getObject("device_id", Long.class),
             rs.getString("device_no"),
             rs.getString("device_name"),
             rs.getTimestamp("start_time").toLocalDateTime().format(DATE_TIME),
@@ -85,7 +85,7 @@ public class BookingRepository {
             rs.getString("booking_no"),
             rs.getLong("farmer_id"),
             rs.getLong("venue_id"),
-            rs.getLong("device_id"),
+            rs.getObject("device_id", Long.class),
             rs.getTimestamp("start_time").toLocalDateTime(),
             rs.getTimestamp("end_time").toLocalDateTime(),
             rs.getString("topic"),
@@ -105,7 +105,7 @@ public class BookingRepository {
             ps.setString(1, bookingNo);
             ps.setLong(2, farmerId);
             ps.setLong(3, venueId);
-            ps.setLong(4, deviceId);
+            ps.setObject(4, deviceId);
             ps.setTimestamp(5, Timestamp.valueOf(startTime));
             ps.setTimestamp(6, Timestamp.valueOf(endTime));
             ps.setString(7, topic);
@@ -155,6 +155,23 @@ public class BookingRepository {
         jdbc.update("UPDATE booking SET status = ? WHERE id = ?", status, id);
     }
 
+    /**
+     * 候补确认时复用排队创建时的 queued 预约，补上分配的设备。
+     */
+    public void confirmQueuedBooking(Long id, Long deviceId) {
+        jdbc.update("""
+                UPDATE booking SET device_id = ?, status = 'approved'
+                WHERE id = ? AND status = 'queued'
+                """, deviceId, id);
+    }
+
+    public void closeQueuedBooking(Long id, String status, String reason) {
+        jdbc.update("""
+                UPDATE booking SET status = ?, cancel_reason = ?
+                WHERE id = ? AND status = 'queued'
+                """, status, reason, id);
+    }
+
     public void updateResources(Long id, Long venueId, Long deviceId,
                                 LocalDateTime startTime, LocalDateTime endTime) {
         jdbc.update("""
@@ -170,6 +187,14 @@ public class BookingRepository {
                 SELECT id, booking_no, farmer_id, venue_id, device_id, start_time, end_time, topic, status
                 FROM booking WHERE id = ?
                 """, rowMapper, id).stream().findFirst();
+    }
+
+    public List<BookingRow> approvedFutureByDevice(Long deviceId) {
+        return jdbc.query("""
+                SELECT id, booking_no, farmer_id, venue_id, device_id, start_time, end_time, topic, status
+                FROM booking
+                WHERE device_id = ? AND status = 'approved' AND start_time > NOW()
+                """, rowMapper, deviceId);
     }
 
     public Optional<Dtos.BookingView> findViewById(Long id) {

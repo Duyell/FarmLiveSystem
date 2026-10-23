@@ -6,6 +6,8 @@ export interface QueueTicket {
   queueNo: string
   farmerId: number
   farmerName: string
+  bookingId: number | null
+  bookingNo: string | null
   venueId: number
   venueName: string
   slotStart: string
@@ -50,6 +52,7 @@ export async function joinQueue(payload: {
   venueId: number
   startTime: string
   endTime: string
+  topic: string
 }): Promise<QueueTicket> {
   return post<QueueTicket>('/farmer/queues', payload)
 }

@@ -139,7 +139,8 @@ public final class Dtos {
     public record QueueCreateRequest(
             @NotNull(message = "场地不能为空") Long venueId,
             @NotBlank(message = "开始时间不能为空") String startTime,
-            @NotBlank(message = "结束时间不能为空") String endTime
+            @NotBlank(message = "结束时间不能为空") String endTime,
+            String topic
     ) {
     }
 
@@ -196,6 +197,8 @@ public final class Dtos {
             String queueNo,
             Long farmerId,
             String farmerName,
+            Long bookingId,
+            String bookingNo,
             Long venueId,
             String venueName,
             String slotStart,

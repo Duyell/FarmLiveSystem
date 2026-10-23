@@ -69,7 +69,12 @@ public class QueueService {
         String queueNo = "Q-" + farmerNo + "-" + start.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
                 + "-" + String.format("%03d", queueRepository.countTodayForFarmer(user.farmerId(), start) + 1);
         int position = queueRepository.nextPosition(request.venueId(), start);
-        Long id = queueRepository.insert(user.farmerId(), request.venueId(), queueNo, start, end, position);
+        String topic = request.topic() == null || request.topic().isBlank()
+                ? "直播预约" : request.topic().trim();
+        Long bookingId = bookingRepository.insertBooking(nextBookingNo(), user.farmerId(),
+                request.venueId(), null, start, end, topic);
+        bookingRepository.updateReview(bookingId, "queued", null, null);
+        Long id = queueRepository.insert(user.farmerId(), request.venueId(), queueNo, start, end, position, bookingId);
         return queueRepository.findViewById(id)
                 .orElseThrow(() -> BusinessException.notFound("排队创建失败"));
     }
@@ -82,9 +87,14 @@ public class QueueService {
         }
         Long deviceId = queueRepository.pickAvailableDevice(row.venueId(), row.slotStart(), row.slotEnd())
                 .orElseThrow(() -> BusinessException.conflict("QUEUE_NO_DEVICE", "暂无可用设备，候选资格保留至截止时间"));
-        Long bookingId = bookingRepository.insertBooking(nextBookingNo(), row.farmerId(), row.venueId(),
-                deviceId, row.slotStart(), row.slotEnd(), "候补直播");
-        bookingRepository.updateReview(bookingId, "approved", null, null);
+        Long bookingId = row.bookingId();
+        if (bookingId == null) {
+            bookingId = bookingRepository.insertBooking(nextBookingNo(), row.farmerId(), row.venueId(),
+                    deviceId, row.slotStart(), row.slotEnd(), "直播预约");
+            bookingRepository.updateReview(bookingId, "approved", null, null);
+        } else {
+            bookingRepository.confirmQueuedBooking(bookingId, deviceId);
+        }
         try {
             for (LocalDateTime slot = row.slotStart(); slot.isBefore(row.slotEnd()); slot = slot.plusHours(1)) {
                 bookingRepository.insertLock(row.venueId(), deviceId, slot, bookingId);
@@ -104,6 +114,9 @@ public class QueueService {
             throw BusinessException.conflict("QUEUE_STATUS_INVALID", "当前状态不能放弃");
         }
         queueRepository.updateStatus(row.id(), "abandoned");
+        if (row.bookingId() != null) {
+            bookingRepository.closeQueuedBooking(row.bookingId(), "canceled", "农户放弃排队");
+        }
         queueRepository.shiftPositions(row.venueId(), row.slotStart(), row.position());
         if ("candidate".equals(row.status())) {
             promoteNext(row.venueId(), row.slotStart(), row.slotEnd());
@@ -121,6 +134,7 @@ public class QueueService {
     public Dtos.QueueView close(Long id) {
         QueueRepository.QueueRow row = queueRepository.findRowById(id)
                 .orElseThrow(() -> BusinessException.notFound("排队不存在"));
+        queueRepository.closeQueuedBookings(row.venueId(), row.slotStart(), "canceled", "队列关闭");
         queueRepository.closeGroup(row.venueId(), row.slotStart());
         return queueRepository.findViewById(row.id())
                 .orElseThrow(() -> BusinessException.notFound("排队不存在"));
@@ -236,6 +250,9 @@ public class QueueService {
     public void expireOverdueCandidates() {
         for (QueueRepository.QueueRow row : queueRepository.expiredCandidates()) {
             queueRepository.updateStatus(row.id(), "expired");
+            if (row.bookingId() != null) {
+                bookingRepository.closeQueuedBooking(row.bookingId(), "canceled", "候选超时未确认");
+            }
             queueRepository.shiftPositions(row.venueId(), row.slotStart(), row.position());
             promoteNext(row.venueId(), row.slotStart(), row.slotEnd());
             notifyNewFirstQueued(row.venueId(), row.slotStart());
@@ -249,6 +266,7 @@ public class QueueService {
     @Transactional
     public void closeQueuesAtDeadline() {
         for (QueueRepository.QueueGroup group : queueRepository.groupsToCloseAtDeadline()) {
+            queueRepository.closeQueuedBookings(group.venueId(), group.slotStart(), "canceled", "开播前24小时队列关闭");
             queueRepository.closeGroup(group.venueId(), group.slotStart());
         }
     }

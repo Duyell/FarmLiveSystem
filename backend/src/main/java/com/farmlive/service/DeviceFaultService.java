@@ -4,6 +4,7 @@ import com.farmlive.auth.CurrentUser;
 import com.farmlive.common.BusinessException;
 import com.farmlive.dto.Dtos;
 import com.farmlive.repo.AdminRepository;
+import com.farmlive.repo.BookingRepository;
 import com.farmlive.repo.DeviceFaultRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,13 +15,16 @@ import java.util.List;
 public class DeviceFaultService {
     private final DeviceFaultRepository faultRepository;
     private final AdminRepository adminRepository;
+    private final BookingRepository bookingRepository;
     private final NotificationService notificationService;
     private final AuditService auditService;
 
     public DeviceFaultService(DeviceFaultRepository faultRepository, AdminRepository adminRepository,
+                              BookingRepository bookingRepository,
                               NotificationService notificationService, AuditService auditService) {
         this.faultRepository = faultRepository;
         this.adminRepository = adminRepository;
+        this.bookingRepository = bookingRepository;
         this.notificationService = notificationService;
         this.auditService = auditService;
     }
@@ -45,10 +49,18 @@ public class DeviceFaultService {
         Long id = faultRepository.create(deviceId, request.faultPart().trim(),
                 request.description().trim(), user.id());
         adminRepository.updateDeviceStatus(deviceId, "maintenance");
+        List<BookingRepository.BookingRow> affected = bookingRepository.approvedFutureByDevice(deviceId);
+        if (!affected.isEmpty()) {
+            notificationService.notifyDeviceFaultCanceled(deviceId, device.name());
+            for (BookingRepository.BookingRow booking : affected) {
+                bookingRepository.deleteLocks(booking.id());
+                bookingRepository.updateCancel(booking.id(), "设备故障，预约自动取消");
+            }
+        }
         auditService.record(user, "DEVICE_FAULT_REPORT",
                 "设备组合 " + device.deviceNo() + " 报修：" + request.faultPart().trim()
-                        + "，" + request.description().trim());
-        notificationService.notifyDeviceFault(deviceId, device.name());
+                        + "，" + request.description().trim()
+                        + "，自动取消预约 " + affected.size() + " 条");
         return faultRepository.findById(id)
                 .orElseThrow(() -> BusinessException.notFound("故障记录创建失败"));
     }

@@ -32,6 +32,7 @@ public class QueueRepository {
             Long id,
             String queueNo,
             Long farmerId,
+            Long bookingId,
             Long venueId,
             LocalDateTime slotStart,
             LocalDateTime slotEnd,
@@ -46,6 +47,7 @@ public class QueueRepository {
 
     private static final String VIEW_SELECT = """
             SELECT q.id, q.queue_no, q.farmer_id, f.name AS farmer_name, f.farmer_no,
+                   q.booking_id, rb.booking_no AS request_booking_no,
                    q.venue_id, v.name AS venue_name,
                    q.slot_start, q.slot_end, q.position, q.status,
                    q.candidate_deadline, q.assigned_device_id, d.name AS device_name,
@@ -53,6 +55,7 @@ public class QueueRepository {
             FROM queue_ticket q
             JOIN farmer f ON f.id = q.farmer_id
             JOIN venue v ON v.id = q.venue_id
+            LEFT JOIN booking rb ON rb.id = q.booking_id
             LEFT JOIN device d ON d.id = q.assigned_device_id
             """;
 
@@ -61,6 +64,8 @@ public class QueueRepository {
             rs.getString("queue_no"),
             rs.getLong("farmer_id"),
             rs.getString("farmer_name"),
+            rs.getObject("booking_id", Long.class),
+            rs.getString("request_booking_no"),
             rs.getLong("venue_id"),
             rs.getString("venue_name"),
             rs.getTimestamp("slot_start").toLocalDateTime().format(DATE_TIME),
@@ -81,6 +86,7 @@ public class QueueRepository {
             rs.getLong("id"),
             rs.getString("queue_no"),
             rs.getLong("farmer_id"),
+            rs.getObject("booking_id", Long.class),
             rs.getLong("venue_id"),
             rs.getTimestamp("slot_start").toLocalDateTime(),
             rs.getTimestamp("slot_end").toLocalDateTime(),
@@ -93,19 +99,20 @@ public class QueueRepository {
     // ---------------- 写入 ----------------
 
     public Long insert(Long farmerId, Long venueId, String queueNo,
-                       LocalDateTime slotStart, LocalDateTime slotEnd, int position) {
+                       LocalDateTime slotStart, LocalDateTime slotEnd, int position, Long bookingId) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbc.update(con -> {
             PreparedStatement ps = con.prepareStatement("""
-                    INSERT INTO queue_ticket (queue_no, farmer_id, venue_id, slot_start, slot_end, position)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO queue_ticket (queue_no, farmer_id, booking_id, venue_id, slot_start, slot_end, position)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     """, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, queueNo);
             ps.setLong(2, farmerId);
-            ps.setLong(3, venueId);
-            ps.setTimestamp(4, Timestamp.valueOf(slotStart));
-            ps.setTimestamp(5, Timestamp.valueOf(slotEnd));
-            ps.setInt(6, position);
+            ps.setObject(3, bookingId);
+            ps.setLong(4, venueId);
+            ps.setTimestamp(5, Timestamp.valueOf(slotStart));
+            ps.setTimestamp(6, Timestamp.valueOf(slotEnd));
+            ps.setInt(7, position);
             return ps;
         }, keyHolder);
         Number key = keyHolder.getKey();
@@ -145,6 +152,17 @@ public class QueueRepository {
                 """, venueId, Timestamp.valueOf(slotStart));
     }
 
+    public void closeQueuedBookings(Long venueId, LocalDateTime slotStart, String status, String reason) {
+        jdbc.update("""
+                UPDATE booking b
+                JOIN queue_ticket q ON q.booking_id = b.id
+                SET b.status = ?, b.cancel_reason = ?
+                WHERE q.venue_id = ? AND q.slot_start = ?
+                  AND q.status IN ('queued', 'candidate')
+                  AND b.status = 'queued'
+                """, status, reason, venueId, Timestamp.valueOf(slotStart));
+    }
+
     /**
      * 到开播前 24 小时仍未转正的队列组，统一关闭。
      */
@@ -165,7 +183,7 @@ public class QueueRepository {
 
     public Optional<QueueRow> findRowById(Long id) {
         return jdbc.query("""
-                SELECT id, queue_no, farmer_id, venue_id, slot_start, slot_end, position, status, candidate_deadline
+                SELECT id, queue_no, farmer_id, booking_id, venue_id, slot_start, slot_end, position, status, candidate_deadline
                 FROM queue_ticket WHERE id = ?
                 """, rowMapper, id).stream().findFirst();
     }
@@ -248,7 +266,7 @@ public class QueueRepository {
 
     public Optional<QueueRow> firstQueued(Long venueId, LocalDateTime slotStart) {
         return jdbc.query("""
-                SELECT id, queue_no, farmer_id, venue_id, slot_start, slot_end, position, status, candidate_deadline
+                SELECT id, queue_no, farmer_id, booking_id, venue_id, slot_start, slot_end, position, status, candidate_deadline
                 FROM queue_ticket
                 WHERE venue_id = ? AND slot_start = ? AND status = 'queued'
                 ORDER BY position LIMIT 1
@@ -290,7 +308,7 @@ public class QueueRepository {
 
     public List<QueueRow> expiredCandidates() {
         return jdbc.query("""
-                SELECT id, queue_no, farmer_id, venue_id, slot_start, slot_end, position, status, candidate_deadline
+                SELECT id, queue_no, farmer_id, booking_id, venue_id, slot_start, slot_end, position, status, candidate_deadline
                 FROM queue_ticket
                 WHERE status = 'candidate' AND candidate_deadline < NOW()
                 """, rowMapper);
@@ -319,6 +337,7 @@ public class QueueRepository {
             LocalDateTime start = LocalDateTime.parse(item.slotStart(), DATE_TIME);
             int total = activeTotal(item.venueId(), start);
             list.set(i, new Dtos.QueueView(item.id(), item.queueNo(), item.farmerId(), item.farmerName(),
+                    item.bookingId(), item.bookingNo(),
                     item.venueId(), item.venueName(), item.slotStart(), item.slotEnd(),
                     item.position(), total, Math.max(0, item.position() - 1), item.status(),
                     item.candidateDeadline(), item.assignedDeviceId(), item.assignedDeviceName(),
