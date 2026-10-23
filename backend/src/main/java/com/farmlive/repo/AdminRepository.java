@@ -417,6 +417,10 @@ public class AdminRepository {
                 calibrationDate == null ? null : Date.valueOf(calibrationDate), id);
     }
 
+    public void updateDeviceStatus(Long id, String status) {
+        jdbc.update("UPDATE device SET status = ? WHERE id = ?", status, id);
+    }
+
     public void deleteDevice(Long id) {
         jdbc.update("DELETE FROM device WHERE id = ?", id);
     }

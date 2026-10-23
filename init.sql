@@ -143,6 +143,22 @@ CREATE TABLE IF NOT EXISTS device (
   INDEX idx_device_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='直播设备组合，必须属于一个场地';
 
+CREATE TABLE IF NOT EXISTS device_fault (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  device_id BIGINT NOT NULL,
+  fault_part VARCHAR(80) NOT NULL,
+  description VARCHAR(500) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'reported',
+  reported_by BIGINT NOT NULL,
+  reported_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  resolved_at DATETIME NULL,
+  resolution VARCHAR(500) NULL,
+  CONSTRAINT fk_fault_device FOREIGN KEY (device_id) REFERENCES device(id),
+  CONSTRAINT fk_fault_account FOREIGN KEY (reported_by) REFERENCES account(id),
+  INDEX idx_fault_device (device_id, status),
+  INDEX idx_fault_reported (reported_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备组合故障与维修记录';
+
 -- ============================================================
 -- 7. 预约
 -- ============================================================
@@ -307,7 +323,10 @@ INSERT IGNORE INTO notification_template (code, name, type, title_template, cont
    '${farmerName}，您预约的「${topic}」将于 ${startTime} 在 ${venueName} 开播，请提前做好准备。'),
   ('device_fault', '设备故障', 'device_fault',
    '设备故障通知',
-   '${farmerName}，您 ${startTime} 在 ${venueName} 预约的设备「${deviceName}」出现故障，管理员将尽快为您调整。');
+   '${farmerName}，您 ${startTime} 在 ${venueName} 预约的设备「${deviceName}」出现故障，管理员将尽快为您调整。'),
+  ('device_recovered', '设备恢复', 'device_fault',
+   '设备恢复通知',
+   '${farmerName}，您 ${startTime} 在 ${venueName} 预约的设备「${deviceName}」已维修完成并恢复可用。');
 
 -- ============================================================
 -- 13. 直播销售记录

@@ -323,6 +323,29 @@ public final class Dtos {
     ) {
     }
 
+    public record DeviceFaultView(
+            Long id,
+            Long deviceId,
+            String deviceName,
+            String faultPart,
+            String description,
+            String status,
+            String reportedBy,
+            String reportedAt,
+            String resolvedAt,
+            String resolution
+    ) {
+    }
+
+    public record DeviceFaultCreateRequest(
+            @NotBlank(message = "故障部位不能为空") String faultPart,
+            @NotBlank(message = "故障描述不能为空") String description
+    ) {
+    }
+
+    public record DeviceFaultResolveRequest(String resolution) {
+    }
+
     public record DashboardView(long accounts, long farmers, long venues, long devices, long bookings,
                                 long pendingReview, long todayLive,
                                 long availableVenues, long availableDevices) {

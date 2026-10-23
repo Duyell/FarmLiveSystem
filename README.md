@@ -127,6 +127,7 @@ npm run build
 | 区域字典 | `GET /api/regions` |
 | 可用资源 | `GET /api/resources/available` |
 | 直播管理员基础数据 | `GET/POST/PUT/DELETE /api/live/farmers`、`/api/live/venues`、`/api/live/devices` |
+| 设备组合故障 | `GET/POST /api/live/devices/{id}/faults`、`POST /api/live/devices/{id}/faults/{faultId}/resolve` |
 | 农户资质材料 | `GET/POST /api/live/farmers/{id}/qualifications`、`POST /api/live/qualifications/{id}/review` |
 | 登录 | `POST /api/auth/login` |
 | 当前用户 | `GET /api/auth/me` |

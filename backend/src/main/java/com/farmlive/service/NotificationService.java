@@ -127,6 +127,23 @@ public class NotificationService {
     }
 
     /**
+     * 设备恢复：通知该设备未来已通过预约的农户。
+     */
+    public void notifyDeviceRecovered(Long deviceId, String deviceName) {
+        for (NotificationRepository.EventTarget target : repository.deviceFaultTargets(deviceId)) {
+            sendEvent(target.accountId(), "device_fault", "device_recovered",
+                    "device_recovered:" + target.bookingNo(), Map.of(
+                    "farmerName", target.farmerName(),
+                    "topic", target.topic(),
+                    "startTime", target.startTime(),
+                    "venueName", target.venueName(),
+                    "deviceName", deviceName,
+                    "bookingNo", target.bookingNo()
+            ));
+        }
+    }
+
+    /**
      * 按农户档案发送（自动解析农户登录账号；未关联账号则跳过）。
      */
     public void notifyFarmer(Long farmerId, String type, String templateCode, String eventKey, Map<String, String> vars) {
