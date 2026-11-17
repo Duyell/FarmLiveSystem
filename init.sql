@@ -337,7 +337,10 @@ INSERT IGNORE INTO notification_template (code, name, type, title_template, cont
    '${farmerName}，您 ${startTime} 在 ${venueName} 的预约「${topic}」因设备「${deviceName}」故障无法使用，已自动取消，请重新预约。'),
   ('device_recovered', '设备恢复', 'device_fault',
    '设备恢复通知',
-   '${farmerName}，您 ${startTime} 在 ${venueName} 预约的设备「${deviceName}」已维修完成并恢复可用。');
+   '${farmerName}，您 ${startTime} 在 ${venueName} 预约的设备「${deviceName}」已维修完成并恢复可用。'),
+  ('device_calibration', '设备校准提醒', 'calibration',
+   '设备校准到期提醒',
+   '设备「${deviceName}」（${deviceNo}）将于 ${calibrationDate} 到达校准周期，请及时安排校准，逾期未校准设备可能影响直播质量。');
 
 -- ============================================================
 -- 13. 直播销售记录
@@ -394,6 +397,21 @@ CREATE TABLE IF NOT EXISTS knowledge_doc (
   INDEX idx_kb_enabled (enabled),
   INDEX idx_kb_parse (parse_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI 知识库文档';
+
+-- ============================================================
+-- 15.1 知识库分块与向量
+-- ============================================================
+CREATE TABLE IF NOT EXISTS knowledge_chunk (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  doc_id BIGINT NOT NULL,
+  chunk_index INT NOT NULL,
+  content TEXT NOT NULL,
+  char_count INT NOT NULL DEFAULT 0,
+  embedding MEDIUMTEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_chunk_doc FOREIGN KEY (doc_id) REFERENCES knowledge_doc(id) ON DELETE CASCADE,
+  INDEX idx_chunk_doc (doc_id, chunk_index)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识库文档分块与向量';
 
 -- ============================================================
 -- 16. 问答记录

@@ -19,19 +19,22 @@ import java.util.UUID;
 
 /**
  * 农户资质材料：上传、列表、审核、下载。
- * 文件保存在 app.upload-dir 下，数据库只存元数据。
+ * 文件保存在 app.upload-dir 下（AES-256-GCM 加密存储），数据库只存元数据。
  */
 @Service
 public class QualificationService {
     private final QualificationRepository repository;
     private final AuditService auditService;
+    private final com.farmlive.common.FileCryptoService fileCrypto;
     private final Path uploadRoot;
 
     public QualificationService(QualificationRepository repository,
                                 AuditService auditService,
+                                com.farmlive.common.FileCryptoService fileCrypto,
                                 @Value("${app.upload-dir:uploads}") String uploadDir) {
         this.repository = repository;
         this.auditService = auditService;
+        this.fileCrypto = fileCrypto;
         this.uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
 
@@ -65,7 +68,7 @@ public class QualificationService {
         Path dir = uploadRoot.resolve("qualifications").resolve(String.valueOf(farmerId));
         try {
             Files.createDirectories(dir);
-            Files.copy(file.getInputStream(), dir.resolve(stored), StandardCopyOption.REPLACE_EXISTING);
+            Files.write(dir.resolve(stored), fileCrypto.encrypt(file.getBytes()));
         } catch (IOException ex) {
             throw BusinessException.badRequest("文件保存失败");
         }
@@ -106,6 +109,26 @@ public class QualificationService {
         return repository.listByFarmer(row.farmerId()).stream()
                 .filter(item -> item.id().equals(id)).findFirst()
                 .orElseThrow(() -> BusinessException.notFound("资质材料不存在"));
+    }
+
+    /**
+     * 读取并解密资质文件内容（历史明文文件自动兼容）。
+     */
+    public byte[] fileContent(Long id) {
+        QualificationRepository.QualificationRow row = repository.findRow(id)
+                .orElseThrow(() -> BusinessException.notFound("资质材料不存在"));
+        Path path = uploadRoot.resolve("qualifications")
+                .resolve(String.valueOf(row.farmerId())).resolve(row.storedName()).normalize();
+        if (!path.startsWith(uploadRoot) || !Files.exists(path)) {
+            throw BusinessException.notFound("文件不存在");
+        }
+        try {
+            return fileCrypto.decrypt(Files.readAllBytes(path));
+        } catch (IOException ex) {
+            throw BusinessException.badRequest("文件读取失败");
+        } catch (IllegalStateException ex) {
+            throw BusinessException.badRequest("FILE_DECRYPT_FAILED", "文件解密失败：" + ex.getMessage());
+        }
     }
 
     public Path file(Long id) {

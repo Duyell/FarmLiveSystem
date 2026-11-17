@@ -50,8 +50,20 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        if (path.startsWith("/api/admin") && !"system_admin".equals(user.roleCode())) {
+        boolean systemAdmin = "system_admin".equals(user.roleCode());
+        boolean liveAdmin = "live_admin".equals(user.roleCode());
+        boolean readOnly = "GET".equalsIgnoreCase(request.getMethod())
+                || "HEAD".equalsIgnoreCase(request.getMethod());
+
+        if (path.startsWith("/api/admin") && !systemAdmin) {
             write(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN", "没有权限");
+            return false;
+        }
+        // 系统管理员：系统配置/角色分配/审计/知识库可用，但农户、场地、设备的数据维护归直播管理员
+        if (systemAdmin && !readOnly && (path.startsWith("/api/admin/farmers")
+                || path.startsWith("/api/admin/venues") || path.startsWith("/api/admin/devices"))) {
+            write(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN",
+                    "农户资质与资源维护由直播管理员操作");
             return false;
         }
 
@@ -60,9 +72,14 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        if (path.startsWith("/api/live") && !"live_admin".equals(user.roleCode())
-                && !"system_admin".equals(user.roleCode())) {
+        // 直播管理员负责审核/调度/排队/销售等业务操作；系统管理员仅保留全量只读查看
+        if (path.startsWith("/api/live") && !liveAdmin && !(systemAdmin && readOnly)) {
             write(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN", "该功能仅直播管理员可用");
+            return false;
+        }
+
+        if (path.startsWith("/api/knowledge") && !"system_admin".equals(user.roleCode())) {
+            write(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN", "知识库管理仅系统管理员可用");
             return false;
         }
 

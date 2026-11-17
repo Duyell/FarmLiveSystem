@@ -225,7 +225,7 @@ public class AdminRepository {
         }
         Long total = jdbc.queryForObject("SELECT COUNT(*) FROM farmer" + where, Long.class, args.toArray());
         List<Dtos.FarmerView> items = jdbc.query("""
-                SELECT id, farmer_no, name, county, county_code, phone, qualification_status, status, created_at
+                SELECT id, farmer_no, name, county, county_code, phone, qualification_status, status, created_at, updated_at
                 FROM farmer
                 """ + where + " ORDER BY id DESC LIMIT ? OFFSET ?",
                 farmerMapper, append(args, size, (page - 1) * size).toArray());
@@ -234,7 +234,7 @@ public class AdminRepository {
 
     public Optional<Dtos.FarmerView> findFarmer(Long id) {
         return jdbc.query("""
-                SELECT id, farmer_no, name, county, county_code, phone, qualification_status, status, created_at
+                SELECT id, farmer_no, name, county, county_code, phone, qualification_status, status, created_at, updated_at
                 FROM farmer WHERE id = ?
                 """, farmerMapper, id).stream().findFirst();
     }
@@ -268,7 +268,8 @@ public class AdminRepository {
     public void updateFarmer(Long id, String name, String county, String countyCode, String phone,
                              String qualificationStatus, String status) {
         jdbc.update("""
-                UPDATE farmer SET name = ?, county = ?, county_code = ?, phone = ?, qualification_status = ?, status = ?
+                UPDATE farmer SET name = ?, county = ?, county_code = ?, phone = ?, qualification_status = ?, status = ?,
+                       updated_at = NOW()
                 WHERE id = ?
                 """, name, county, countyCode, phone, qualificationStatus, status, id);
     }
@@ -298,7 +299,7 @@ public class AdminRepository {
         }
         Long total = jdbc.queryForObject("SELECT COUNT(*) FROM venue" + where, Long.class, args.toArray());
         List<Dtos.VenueView> items = jdbc.query("""
-                SELECT id, venue_no, name, location, capacity, open_start, open_end, county_code, status, created_at
+                SELECT id, venue_no, name, location, capacity, open_start, open_end, county_code, status, created_at, updated_at
                 FROM venue
                 """ + where + " ORDER BY id DESC LIMIT ? OFFSET ?",
                 venueMapper, append(args, size, (page - 1) * size).toArray());
@@ -307,7 +308,7 @@ public class AdminRepository {
 
     public Optional<Dtos.VenueView> findVenue(Long id) {
         return jdbc.query("""
-                SELECT id, venue_no, name, location, capacity, open_start, open_end, county_code, status, created_at
+                SELECT id, venue_no, name, location, capacity, open_start, open_end, county_code, status, created_at, updated_at
                 FROM venue WHERE id = ?
                 """, venueMapper, id).stream().findFirst();
     }
@@ -338,7 +339,7 @@ public class AdminRepository {
                             LocalTime openStart, LocalTime openEnd, String countyCode, String status) {
         jdbc.update("""
                 UPDATE venue SET name = ?, location = ?, capacity = ?, open_start = ?, open_end = ?,
-                                county_code = ?, status = ?
+                                county_code = ?, status = ?, updated_at = NOW()
                 WHERE id = ?
                 """, name, location, capacity, Time.valueOf(openStart), Time.valueOf(openEnd), countyCode, status, id);
     }
@@ -371,7 +372,7 @@ public class AdminRepository {
         Long total = jdbc.queryForObject("SELECT COUNT(*) " + base, Long.class, args.toArray());
         List<Dtos.DeviceView> items = jdbc.query("""
                 SELECT d.id, d.device_no, d.name, d.model, d.config, d.venue_id, v.name AS venue_name,
-                       d.status, d.calibration_date, d.created_at
+                       d.status, d.calibration_date, d.created_at, d.updated_at
                 """ + base + " ORDER BY d.id DESC LIMIT ? OFFSET ?",
                 deviceMapper, append(args, size, (page - 1) * size).toArray());
         return new PageResult<>(items, total == null ? 0 : total, page, size);
@@ -380,7 +381,7 @@ public class AdminRepository {
     public Optional<Dtos.DeviceView> findDevice(Long id) {
         return jdbc.query("""
                 SELECT d.id, d.device_no, d.name, d.model, d.config, d.venue_id, v.name AS venue_name,
-                       d.status, d.calibration_date, d.created_at
+                       d.status, d.calibration_date, d.created_at, d.updated_at
                 FROM device d JOIN venue v ON v.id = d.venue_id
                 WHERE d.id = ?
                 """, deviceMapper, id).stream().findFirst();
@@ -411,14 +412,15 @@ public class AdminRepository {
     public void updateDevice(Long id, String name, String model, String config, Long venueId,
                              String status, LocalDate calibrationDate) {
         jdbc.update("""
-                UPDATE device SET name = ?, model = ?, config = ?, venue_id = ?, status = ?, calibration_date = ?
+                UPDATE device SET name = ?, model = ?, config = ?, venue_id = ?, status = ?, calibration_date = ?,
+                       updated_at = NOW()
                 WHERE id = ?
                 """, name, model, config, venueId, status,
                 calibrationDate == null ? null : Date.valueOf(calibrationDate), id);
     }
 
     public void updateDeviceStatus(Long id, String status) {
-        jdbc.update("UPDATE device SET status = ? WHERE id = ?", status, id);
+        jdbc.update("UPDATE device SET status = ?, updated_at = NOW() WHERE id = ?", status, id);
     }
 
     public void deleteDevice(Long id) {
@@ -500,7 +502,8 @@ public class AdminRepository {
             maskPhone(rs.getString("phone")),
             rs.getString("qualification_status"),
             rs.getString("status"),
-            dateTime(rs.getTimestamp("created_at"))
+            dateTime(rs.getTimestamp("created_at")),
+            dateTime(rs.getTimestamp("updated_at"))
     );
 
     private final RowMapper<Dtos.VenueView> venueMapper = (rs, rowNum) -> new Dtos.VenueView(
@@ -513,7 +516,8 @@ public class AdminRepository {
             rs.getTime("open_end").toLocalTime().format(TIME),
             rs.getString("county_code"),
             rs.getString("status"),
-            dateTime(rs.getTimestamp("created_at"))
+            dateTime(rs.getTimestamp("created_at")),
+            dateTime(rs.getTimestamp("updated_at"))
     );
 
     private final RowMapper<Dtos.DeviceView> deviceMapper = (rs, rowNum) -> new Dtos.DeviceView(
@@ -526,7 +530,8 @@ public class AdminRepository {
             rs.getString("venue_name"),
             rs.getString("status"),
             rs.getDate("calibration_date") == null ? null : rs.getDate("calibration_date").toLocalDate().format(DATE),
-            dateTime(rs.getTimestamp("created_at"))
+            dateTime(rs.getTimestamp("created_at")),
+            dateTime(rs.getTimestamp("updated_at"))
     );
 
     public static String maskPhone(String phone) {

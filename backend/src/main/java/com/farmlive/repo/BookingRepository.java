@@ -215,7 +215,8 @@ public class BookingRepository {
         return page(VIEW_SELECT + where + " ORDER BY b.id DESC", args, page, size);
     }
 
-    public PageResult<Dtos.BookingView> listForReview(String status, String keyword, int page, int size) {
+    public PageResult<Dtos.BookingView> listForReview(String status, String keyword, String countyCode,
+                                                       String productType, int page, int size) {
         StringBuilder where = new StringBuilder(" WHERE 1 = 1 ");
         List<Object> args = new ArrayList<>();
         if (status != null && !status.isBlank()) {
@@ -227,7 +228,42 @@ public class BookingRepository {
             String like = "%" + keyword.trim() + "%";
             for (int i = 0; i < 3; i++) args.add(like);
         }
+        if (countyCode != null && !countyCode.isBlank()) {
+            where.append(" AND v.county_code = ? ");
+            args.add(countyCode.trim());
+        }
+        if (productType != null && !productType.isBlank()) {
+            where.append(productTypeClause(productType.trim()));
+        }
         return page(VIEW_SELECT + where + " ORDER BY b.id DESC", args, page, size);
+    }
+
+    /**
+     * 农产品类型筛选子句：按预约产品清单名称关键字归类（复用 StatsRepository 类型字典）。
+     */
+    private String productTypeClause(String productType) {
+        if ("其他".equals(productType)) {
+            StringBuilder clause = new StringBuilder(" AND EXISTS (SELECT 1 FROM booking_product bp WHERE bp.booking_id = b.id AND bp.product_name IS NOT NULL AND bp.product_name <> ''");
+            for (String type : StatsRepository.typeNames()) {
+                clause.append(" AND NOT EXISTS (SELECT 1 FROM booking_product bp2 WHERE bp2.booking_id = b.id AND (");
+                clause.append(keywordOr("bp2.product_name", type));
+                clause.append("))");
+            }
+            clause.append(") ");
+            return clause.toString();
+        }
+        List<String> keywords = StatsRepository.keywordsOf(productType);
+        if (keywords == null || keywords.isEmpty()) {
+            return "";
+        }
+        return " AND EXISTS (SELECT 1 FROM booking_product bp WHERE bp.booking_id = b.id AND ("
+                + keywordOr("bp.product_name", productType) + ")) ";
+    }
+
+    private String keywordOr(String column, String type) {
+        return StatsRepository.keywordsOf(type).stream()
+                .map(keyword -> column + " LIKE '%" + keyword + "%'")
+                .collect(java.util.stream.Collectors.joining(" OR "));
     }
 
     /**
@@ -249,6 +285,19 @@ public class BookingRepository {
         Integer count = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM venue WHERE id = ? AND status = 'available'",
                 Integer.class, venueId);
+        return count != null && count > 0;
+    }
+
+    /**
+     * 预约时段是否完全落在场地开放时段内（含边界）。
+     */
+    public boolean venueCoversSlot(Long venueId, java.time.LocalTime startTime, java.time.LocalTime endTime) {
+        if (venueId == null || startTime == null || endTime == null) return false;
+        Integer count = jdbc.queryForObject("""
+                SELECT COUNT(*) FROM venue
+                WHERE id = ? AND status = 'available'
+                  AND open_start <= ? AND open_end >= ?
+                """, Integer.class, venueId, java.sql.Time.valueOf(startTime), java.sql.Time.valueOf(endTime));
         return count != null && count > 0;
     }
 

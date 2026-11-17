@@ -49,6 +49,7 @@ public class BookingService {
         if (!repository.venueAvailable(request.venueId())) {
             throw BusinessException.badRequest("场地不存在或不可用");
         }
+        validateVenueHours(request.venueId(), start, end);
         if (!repository.deviceAvailableInVenue(request.deviceId(), request.venueId())) {
             throw BusinessException.badRequest("设备不存在、不可用或不属于所选场地");
         }
@@ -189,8 +190,9 @@ public class BookingService {
         return view;
     }
 
-    public PageResult<Dtos.BookingView> listForReview(String status, String keyword, int page, int size) {
-        return repository.listForReview(status, keyword, page, size);
+    public PageResult<Dtos.BookingView> listForReview(String status, String keyword, String countyCode,
+                                                       String productType, int page, int size) {
+        return repository.listForReview(status, keyword, countyCode, productType, page, size);
     }
 
     public List<Dtos.AvailableVenueView> availableResources(String countyCode, String date,
@@ -225,9 +227,20 @@ public class BookingService {
         }
         LocalDateTime recommendedEnd = recommended.plusMinutes(minutes);
         validateSlot(recommended, recommendedEnd);
+        validateVenueHours(booking.venueId(), recommended, recommendedEnd);
         if (repository.venueHasOverlap(booking.venueId(), recommended, recommendedEnd)
                 || repository.deviceHasOverlap(booking.deviceId(), recommended, recommendedEnd)) {
             throw BusinessException.conflict("BOOKING_CONFLICT", "推荐时间已被占用，请换一个时间");
+        }
+    }
+
+    /**
+     * 预约时段必须完全落在场地开放时段内（含边界），供提交与推荐时间复用。
+     */
+    public void validateVenueHours(Long venueId, LocalDateTime start, LocalDateTime end) {
+        if (!repository.venueCoversSlot(venueId, start.toLocalTime(), end.toLocalTime())) {
+            throw BusinessException.badRequest("BOOKING_TIME_INVALID",
+                    "预约时段必须在场地开放时段内（开始不早于开放时间，结束不晚于关闭时间）");
         }
     }
 

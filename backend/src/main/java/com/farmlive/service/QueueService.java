@@ -209,6 +209,10 @@ public class QueueService {
         if (bookingRepository.venueHasOverlap(venueId, slotStart, slotEnd)) {
             return;
         }
+        if (queueRepository.hasCandidate(venueId, slotStart)) {
+            // 同一时段同时只允许一个候补，待其确认或放弃后再晋升下一位
+            return;
+        }
         if (queueRepository.pickAvailableDevice(venueId, slotStart, slotEnd).isEmpty()) {
             return;
         }
@@ -268,6 +272,19 @@ public class QueueService {
         for (QueueRepository.QueueGroup group : queueRepository.groupsToCloseAtDeadline()) {
             queueRepository.closeQueuedBookings(group.venueId(), group.slotStart(), "canceled", "开播前24小时队列关闭");
             queueRepository.closeGroup(group.venueId(), group.slotStart());
+        }
+    }
+
+    /**
+     * 空闲时段兜底晋升：时段已无人占用但仍有排队中票时（如资源经其他路径释放），
+     * 自动按顺位将队首晋升为候补并发通知，避免"时段空闲却仍在排队"的状态不一致。
+     * promoteNext 内部自带占用/设备/窗口/候补唯一性检查，本扫描幂等。
+     */
+    @Scheduled(fixedDelay = 60_000)
+    @Transactional
+    public void promoteIdleQueues() {
+        for (QueueRepository.QueuedGroup group : queueRepository.queuedGroups()) {
+            promoteNext(group.venueId(), group.slotStart(), group.slotEnd());
         }
     }
 

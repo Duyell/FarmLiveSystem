@@ -30,7 +30,8 @@ export const NOTIFICATION_TYPE: Record<string, string> = {
   queue: '顺位变化',
   candidate: '候补提醒',
   reminder: '开播提醒',
-  device_fault: '设备故障'
+  device_fault: '设备故障',
+  calibration: '校准提醒'
 }
 
 export const NOTIFICATION_STATUS: Record<string, { label: string; type: 'success' | 'warning' | 'danger' | 'info' }> = {

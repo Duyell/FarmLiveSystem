@@ -41,7 +41,7 @@
           <template #default="{ row }">{{ row.startTime }} 至 {{ row.endTime.slice(11) }}</template>
         </el-table-column>
         <el-table-column prop="venueName" label="场地" width="110" />
-        <el-table-column label="状态" width="75">
+        <el-table-column label="状态" width="90">
           <template #default="{ row }">
             <el-tag :type="statusMeta(row.status).type">{{ statusMeta(row.status).label }}</el-tag>
           </template>

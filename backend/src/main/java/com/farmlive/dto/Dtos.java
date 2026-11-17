@@ -258,7 +258,8 @@ public final class Dtos {
             String phone,
             String qualificationStatus,
             String status,
-            String createdAt
+            String createdAt,
+            String updatedAt
     ) {
     }
 
@@ -284,7 +285,8 @@ public final class Dtos {
             String openEnd,
             String countyCode,
             String status,
-            String createdAt
+            String createdAt,
+            String updatedAt
     ) {
     }
 
@@ -296,7 +298,8 @@ public final class Dtos {
             @NotBlank(message = "开放开始时间不能为空") String openStart,
             @NotBlank(message = "开放结束时间不能为空") String openEnd,
             @NotBlank(message = "所属区域不能为空") String countyCode,
-            String status
+            String status,
+            String changeReason
     ) {
     }
 
@@ -310,7 +313,8 @@ public final class Dtos {
             String venueName,
             String status,
             String calibrationDate,
-            String createdAt
+            String createdAt,
+            String updatedAt
     ) {
     }
 
@@ -480,6 +484,13 @@ public final class Dtos {
     ) {
     }
 
+    public record AuditVerifyView(
+            int total,
+            int intact,
+            List<Long> tamperedIds
+    ) {
+    }
+
     // ---------------- qualification ----------------
 
     public record QualificationView(
@@ -499,6 +510,63 @@ public final class Dtos {
     public record QualificationReviewRequest(
             @NotBlank(message = "审核结果不能为空") String result,
             String comment
+    ) {
+    }
+
+    // ---------------- knowledge / qa ----------------
+
+    public record KnowledgeDocView(
+            Long id,
+            String title,
+            String fileName,
+            String fileType,
+            long fileSize,
+            String parseStatus,
+            boolean enabled,
+            int chunkCount,
+            String uploadedByName,
+            String createdAt,
+            String updatedAt
+    ) {
+    }
+
+    public record KnowledgeToggleRequest(
+            @NotNull(message = "启用状态不能为空") Boolean enabled
+    ) {
+    }
+
+    public record QaAskRequest(
+            @NotBlank(message = "问题不能为空") String question
+    ) {
+    }
+
+    public record QaView(
+            Long id,
+            String question,
+            String answer,
+            List<String> citations,
+            String createdAt
+    ) {
+    }
+
+    // ---------------- second verify ----------------
+
+    public record VerifyPasswordRequest(
+            @NotBlank(message = "密码不能为空") String password
+    ) {
+    }
+
+    public record VerifyTokenView(
+            String verifyToken,
+            int expiresInSeconds
+    ) {
+    }
+
+    public record FarmerPhoneView(
+            Long id,
+            String farmerNo,
+            String name,
+            String phone
     ) {
     }
 

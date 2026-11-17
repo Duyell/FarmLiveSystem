@@ -107,6 +107,8 @@ export async function getFarmerProfile(): Promise<FarmerProfile> {
 export async function listLiveBookings(params: {
   status?: string
   keyword?: string
+  countyCode?: string
+  productType?: string
   page?: number
   size?: number
 }): Promise<PageResult<Booking>> {

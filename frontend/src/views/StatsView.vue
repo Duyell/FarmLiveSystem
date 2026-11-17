@@ -28,31 +28,19 @@
         </el-select>
         <el-button type="primary" @click="load">查询</el-button>
         <el-button v-if="canSeeDetail" @click="exportData">导出 CSV</el-button>
+        <el-button v-else :loading="exporting" @click="exportAggregate">导出 CSV（聚合）</el-button>
       </div>
 
       <el-row :gutter="16" class="metric-row">
-        <el-col :xs="12" :sm="12" :lg="6">
+        <el-col v-for="item in metricCards" :key="item.key" :xs="12" :sm="12" :lg="6">
           <div class="metric-card">
-            <div class="metric-label">场地占用率</div>
-            <div class="metric-value">{{ overview.occupancyRate }}%</div>
-          </div>
-        </el-col>
-        <el-col :xs="12" :sm="12" :lg="6">
-          <div class="metric-card">
-            <div class="metric-label">直播场次</div>
-            <div class="metric-value">{{ overview.liveCount }}</div>
-          </div>
-        </el-col>
-        <el-col :xs="12" :sm="12" :lg="6">
-          <div class="metric-card">
-            <div class="metric-label">卖出数量</div>
-            <div class="metric-value">{{ overview.soldQuantity }}</div>
-          </div>
-        </el-col>
-        <el-col :xs="12" :sm="12" :lg="6">
-          <div class="metric-card">
-            <div class="metric-label">预约成功率</div>
-            <div class="metric-value">{{ overview.successRate }}%</div>
+            <div class="metric-icon" :style="{ background: item.bg }">
+              <el-icon :size="20"><component :is="item.icon" /></el-icon>
+            </div>
+            <div class="metric-info">
+              <div class="metric-label">{{ item.label }}</div>
+              <div class="metric-value">{{ overview[item.key] }}{{ item.suffix }}</div>
+            </div>
           </div>
         </el-col>
       </el-row>
@@ -101,9 +89,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { CircleCheck, DataLine, Goods, VideoPlay } from '@element-plus/icons-vue'
 import RegionSelect from '../components/RegionSelect.vue'
 import { currentUser } from '../api/auth'
 import {
+  downloadAggregateCsv,
   downloadStats,
   getDetails,
   getOverview,
@@ -115,6 +105,13 @@ import {
 } from '../api/stats'
 
 const canSeeDetail = computed(() => currentUser()?.roleCode !== 'data_viewer')
+
+const metricCards = computed(() => [
+  { key: 'occupancyRate' as keyof StatsOverview, label: '场地占用率', icon: DataLine, bg: '#e6f4ea', suffix: '%' },
+  { key: 'liveCount' as keyof StatsOverview, label: '直播场次', icon: VideoPlay, bg: '#e8f1fd', suffix: '' },
+  { key: 'soldQuantity' as keyof StatsOverview, label: '卖出数量', icon: Goods, bg: '#fdf3e7', suffix: '' },
+  { key: 'successRate' as keyof StatsOverview, label: '预约成功率', icon: CircleCheck, bg: '#f1eafd', suffix: '%' }
+])
 
 const range = ref<[string, string] | null>(null)
 const countyCode = ref('')
@@ -188,6 +185,26 @@ async function exportData() {
   }
 }
 
+const exporting = ref(false)
+
+async function exportAggregate() {
+  exporting.value = true
+  try {
+    const blob = await downloadAggregateCsv(query())
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'stats-aggregate.csv'
+    link.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success('聚合统计 CSV 已导出')
+  } catch (error) {
+    ElMessage.error((error as Error).message)
+  } finally {
+    exporting.value = false
+  }
+}
+
 async function loadProductNames() {
   try {
     productNames.value = await listProductNames()
@@ -229,6 +246,21 @@ onMounted(async () => {
   border: 1px solid #e4ecdf;
   border-radius: 10px;
   padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.metric-icon {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: #2f7d32;
+}
+.metric-info {
+  min-width: 0;
 }
 .metric-label {
   color: #7a8699;

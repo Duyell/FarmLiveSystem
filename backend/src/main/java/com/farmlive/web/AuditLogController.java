@@ -63,6 +63,14 @@ public class AuditLogController {
         return ResponseEntity.ok().headers(headers).body(csv.toString().getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * 防篡改校验：逐条重算校验值比对，返回被篡改的日志编号（空列表表示全部完整）。
+     */
+    @GetMapping("/verify")
+    public ApiResponse<Dtos.AuditVerifyView> verify() {
+        return ApiResponse.ok(auditService.verify());
+    }
+
     private String csv(String value) {
         if (value == null) return "";
         return "\"" + value.replace("\"", "\"\"") + "\"";

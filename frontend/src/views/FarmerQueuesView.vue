@@ -39,9 +39,6 @@
           <span class="time-sep">至</span>
           <el-time-select v-model="joinForm.endTime" start="07:00" step="01:00" end="22:00" placeholder="结束" style="width: 110px" />
         </el-form-item>
-        <el-form-item label="直播主题">
-          <el-input v-model="joinForm.topic" placeholder="例如：寿县草莓采摘专场" style="width: 220px" maxlength="120" />
-        </el-form-item>
         <el-form-item>
           <el-button type="primary" :loading="checking" @click="check">查询状态</el-button>
         </el-form-item>
@@ -144,8 +141,7 @@ const joinForm = reactive({
   venueId: undefined as number | undefined,
   date: '',
   startTime: '',
-  endTime: '',
-  topic: ''
+  endTime: ''
 })
 
 const counts = computed(() => ({
@@ -192,17 +188,13 @@ function slotPayload() {
   }
 }
 
-function joinPayload() {
-  return { ...slotPayload(), topic: joinForm.topic.trim() }
+function joinPayload(topic: string) {
+  return { ...slotPayload(), topic }
 }
 
 function formReady() {
   if (!joinForm.venueId || !joinForm.date || !joinForm.startTime || !joinForm.endTime) {
     ElMessage.warning('请把场地、日期、时段选完整')
-    return false
-  }
-  if (!joinForm.topic.trim()) {
-    ElMessage.warning('请填写直播主题')
     return false
   }
   if (joinForm.startTime >= joinForm.endTime) {
@@ -230,9 +222,23 @@ function goBooking() {
 
 async function join() {
   if (!formReady()) return
+  // 查状态不需要主题；加入排队时才填写，用于后续候补确认生成预约
+  let topic = ''
+  try {
+    const result = await ElMessageBox.prompt('请输入本次直播主题（加入排队后用于生成预约）', '加入排队', {
+      confirmButtonText: '加入排队',
+      cancelButtonText: '取消',
+      inputPlaceholder: '例如：寿县草莓采摘专场',
+      inputValidator: (value: string) =>
+        (value || '').trim().length >= 2 ? true : '直播主题至少 2 个字'
+    })
+    topic = (result.value || '').trim()
+  } catch {
+    return
+  }
   joining.value = true
   try {
-    const ticket = await joinQueue(joinPayload())
+    const ticket = await joinQueue(joinPayload(topic))
     ElMessage.success(`已加入排队：${ticket.queueNo}，当前顺位第 ${ticket.position} 位`)
     status.value = null
     await load()

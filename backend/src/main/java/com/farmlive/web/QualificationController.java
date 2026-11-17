@@ -7,7 +7,7 @@ import com.farmlive.dto.Dtos;
 import com.farmlive.repo.QualificationRepository;
 import com.farmlive.service.QualificationService;
 import jakarta.validation.Valid;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -63,8 +63,7 @@ public class QualificationController {
     @GetMapping("/qualifications/{id}/file")
     public ResponseEntity<Resource> file(@PathVariable Long id) {
         QualificationRepository.QualificationRow row = service.row(id);
-        Path path = service.file(id);
-        FileSystemResource resource = new FileSystemResource(path);
+        ByteArrayResource resource = new ByteArrayResource(service.fileContent(id));
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(
                 row.contentType() == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : row.contentType()));

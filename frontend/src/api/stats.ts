@@ -63,6 +63,10 @@ export async function listProductNames(): Promise<string[]> {
   return get<string[]>('/stats/products')
 }
 
+export async function listProductTypes(): Promise<string[]> {
+  return get<string[]>('/stats/product-types')
+}
+
 export async function getMyStats(): Promise<MyStats> {
   return get<MyStats>('/farmer/stats')
 }
@@ -73,4 +77,11 @@ export async function getMyStatsDetails(): Promise<StatsDetail[]> {
 
 export async function downloadStats(params: StatsQuery): Promise<Blob> {
   return download('/stats/export', params)
+}
+
+/**
+ * 聚合口径 CSV（指标+趋势），全部角色可导出。
+ */
+export async function downloadAggregateCsv(params: StatsQuery): Promise<Blob> {
+  return download('/stats/export/aggregate-csv', params)
 }

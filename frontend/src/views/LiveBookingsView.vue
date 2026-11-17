@@ -12,11 +12,21 @@
           <el-radio-button value="">全部</el-radio-button>
         </el-radio-group>
         <div class="toolbar-right">
+          <RegionSelect v-model="countyCode" class="region-filter" @change="load" />
+          <el-select
+            v-model="productType"
+            placeholder="农产品类型"
+            clearable
+            style="width: 130px"
+            @change="load"
+          >
+            <el-option v-for="t in productTypes" :key="t" :label="t" :value="t" />
+          </el-select>
           <el-input
             v-model="keyword"
             placeholder="搜索单号 / 主题 / 农户"
             clearable
-            style="width: 220px"
+            style="width: 200px"
             @keyup.enter="load"
           />
           <el-button type="primary" @click="load">查询</el-button>
@@ -142,10 +152,15 @@ import {
   reviewBooking,
   type Booking
 } from '../api/bookings'
+import RegionSelect from '../components/RegionSelect.vue'
+import { listProductTypes } from '../api/stats'
 
 const rows = ref<Booking[]>([])
 const status = ref('pending_review')
 const keyword = ref('')
+const countyCode = ref('')
+const productType = ref('')
+const productTypes = ref<string[]>([])
 const page = ref(1)
 const size = ref(10)
 const total = ref(0)
@@ -187,6 +202,8 @@ async function load() {
     const result = await listLiveBookings({
       status: status.value,
       keyword: keyword.value,
+      countyCode: countyCode.value || undefined,
+      productType: productType.value || undefined,
       page: page.value,
       size: size.value
     })
@@ -230,8 +247,13 @@ function changePage(next: number) {
   load()
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('resize', updateCompact)
+  try {
+    productTypes.value = await listProductTypes()
+  } catch {
+    // 类型列表加载失败不阻塞
+  }
   load()
 })
 

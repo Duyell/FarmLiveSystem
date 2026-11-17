@@ -37,7 +37,9 @@
               end="23:00"
               placeholder="结束时间"
             />
-            <span class="time-hint">整点、不跨天，1-4 小时</span>
+            <span class="time-hint">
+              整点、不跨天，1-4 小时<span v-if="selectedVenue">；须在场地 {{ selectedVenue.openStart }}-{{ selectedVenue.openEnd }} 开放时段内</span>
+            </span>
           </div>
         </el-form-item>
         <el-form-item label="直播主题" required>
@@ -173,10 +175,22 @@ async function loadVenues() {
   }
 }
 
+const selectedVenue = computed(() => venues.value.find((item) => item.venueId === form.venueId))
+
+function slotOutsideVenueHours(venue: { openStart: string; openEnd: string } | undefined): boolean {
+  if (!venue || !form.startTime || !form.endTime) return false
+  return form.startTime < venue.openStart || form.endTime > venue.openEnd
+}
+
 function onVenueChange(venueId: number) {
   form.deviceId = undefined
   const venue = venues.value.find((item) => item.venueId === venueId)
   devices.value = venue ? venue.devices : []
+  if (slotOutsideVenueHours(venue)) {
+    form.startTime = ''
+    form.endTime = ''
+    ElMessage.warning(`所选时段超出场地开放时间（${venue?.openStart}-${venue?.openEnd}），请重新选择时段`)
+  }
 }
 
 function parseProducts(text: string) {
@@ -202,6 +216,11 @@ async function submit() {
   }
   if (form.startTime >= form.endTime) {
     ElMessage.warning('开始时间必须早于结束时间')
+    return
+  }
+  const venue = venues.value.find((item) => item.venueId === form.venueId)
+  if (slotOutsideVenueHours(venue)) {
+    ElMessage.warning(`直播时段须在场地的 ${venue?.openStart}-${venue?.openEnd} 开放时间内`)
     return
   }
   if (!form.topic.trim()) {

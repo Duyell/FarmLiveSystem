@@ -3,6 +3,7 @@ package com.farmlive.web;
 import com.farmlive.auth.AuthInterceptor;
 import com.farmlive.auth.CurrentUser;
 import com.farmlive.auth.PasswordService;
+import com.farmlive.auth.VerifyTokenService;
 import com.farmlive.common.ApiResponse;
 import com.farmlive.common.BusinessException;
 import com.farmlive.common.PageResult;
@@ -36,15 +37,17 @@ public class AdminController {
     private final RegionRepository regionRepository;
     private final NotificationService notificationService;
     private final AuditService auditService;
+    private final VerifyTokenService verifyTokenService;
 
     public AdminController(AdminRepository repository, PasswordService passwordService,
                            RegionRepository regionRepository, NotificationService notificationService,
-                           AuditService auditService) {
+                           AuditService auditService, VerifyTokenService verifyTokenService) {
         this.repository = repository;
         this.passwordService = passwordService;
         this.regionRepository = regionRepository;
         this.notificationService = notificationService;
         this.auditService = auditService;
+        this.verifyTokenService = verifyTokenService;
     }
 
     @GetMapping("/dashboard")
@@ -183,6 +186,28 @@ public class AdminController {
         return ApiResponse.ok(repository.listFarmers(keyword, countyCode, normalizePage(page), normalizeSize(size)));
     }
 
+    /**
+     * 查看农户完整手机号（敏感操作）：需先通过密码二次验证获取 verifyToken，
+     * 验证令牌一次性、5 分钟有效；查看动作留审计（含来源 IP）。
+     */
+    @GetMapping("/farmers/{id}/phone")
+    public ApiResponse<Dtos.FarmerPhoneView> farmerPhone(
+            @RequestAttribute(AuthInterceptor.CURRENT_USER) CurrentUser user,
+            @PathVariable Long id,
+            @RequestParam(value = "verifyToken", required = false) String verifyToken) {
+        if (verifyToken == null || verifyToken.isBlank()
+                || !verifyTokenService.consume(user.id(), verifyToken)) {
+            throw BusinessException.forbidden("VERIFY_REQUIRED", "请先通过密码二次验证（令牌无效或已过期）");
+        }
+        Dtos.FarmerView farmer = repository.findFarmer(id)
+                .orElseThrow(() -> BusinessException.notFound("农户不存在"));
+        String phone = repository.findFarmerPhone(id)
+                .orElseThrow(() -> BusinessException.notFound("农户不存在"));
+        auditService.recordSensitive(user, "SENSITIVE_PHONE_VIEW",
+                "查看农户完整手机号（" + farmer.farmerNo() + " " + farmer.name() + "）");
+        return ApiResponse.ok(new Dtos.FarmerPhoneView(farmer.id(), farmer.farmerNo(), farmer.name(), phone));
+    }
+
     @PostMapping("/farmers")
     public ApiResponse<Dtos.FarmerView> createFarmer(@Valid @RequestBody Dtos.FarmerRequest request) {
         validatePhone(request.phone());
@@ -203,6 +228,10 @@ public class AdminController {
             @Valid @RequestBody Dtos.FarmerRequest request) {
         Dtos.FarmerView existing = repository.findFarmer(id)
                 .orElseThrow(() -> BusinessException.notFound("农户不存在"));
+        if (request.changeReason() == null || request.changeReason().isBlank()) {
+            // yaoqiu 1.2：手动更新农户信息需记录原因，更新接口强制必填
+            throw BusinessException.badRequest("请填写修改原因");
+        }
         String phone = request.phone().trim();
         if (phone.contains("****")) {
             phone = repository.findFarmerPhone(id)
@@ -272,6 +301,10 @@ public class AdminController {
             @Valid @RequestBody Dtos.VenueRequest request) {
         Dtos.VenueView existing = repository.findVenue(id)
                 .orElseThrow(() -> BusinessException.notFound("场地不存在"));
+        if (request.changeReason() == null || request.changeReason().isBlank()) {
+            // yaoqiu 1.2：手动更新场地信息需记录原因，更新接口强制必填
+            throw BusinessException.badRequest("请填写修改原因");
+        }
         LocalTime start = parseTime(request.openStart());
         LocalTime end = parseTime(request.openEnd());
         validateVenueTimes(start, end, request.capacity());
@@ -281,7 +314,8 @@ public class AdminController {
                 request.capacity(), start, end, request.countyCode().trim(), status);
         auditService.recordCurrent("VENUE_UPDATE",
                 "场地 " + existing.venueNo() + "：" + existing.name() + " -> " + request.name().trim()
-                        + "，状态 " + existing.status() + " -> " + status);
+                        + "，状态 " + existing.status() + " -> " + status
+                        + "，原因：" + request.changeReason().trim());
         return ApiResponse.ok(repository.findVenue(id)
                 .orElseThrow(() -> BusinessException.notFound("场地不存在")));
     }
@@ -333,6 +367,10 @@ public class AdminController {
             @Valid @RequestBody Dtos.DeviceRequest request) {
         Dtos.DeviceView existing = repository.findDevice(id)
                 .orElseThrow(() -> BusinessException.notFound("设备不存在"));
+        if (request.changeReason() == null || request.changeReason().isBlank()) {
+            // yaoqiu 1.2：手动更新设备状态需记录原因，更新接口强制必填
+            throw BusinessException.badRequest("请填写修改原因");
+        }
         repository.findVenue(request.venueId())
                 .orElseThrow(() -> BusinessException.badRequest("所属场地不存在"));
         String status = normalizeResourceStatus(request.status());

@@ -28,6 +28,10 @@ public class BusinessException extends RuntimeException {
         return new BusinessException(HttpStatus.FORBIDDEN, "FORBIDDEN", message);
     }
 
+    public static BusinessException forbidden(String code, String message) {
+        return new BusinessException(HttpStatus.FORBIDDEN, code, message);
+    }
+
     public static BusinessException notFound(String message) {
         return new BusinessException(HttpStatus.NOT_FOUND, "NOT_FOUND", message);
     }

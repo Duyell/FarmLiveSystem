@@ -161,6 +161,10 @@ public class AdjustmentService {
         if (!bookingRepository.venueAvailable(venueId)) {
             throw BusinessException.conflict("VENUE_UNAVAILABLE", "新场地不可用");
         }
+        if (!bookingRepository.venueCoversSlot(venueId, start.toLocalTime(), end.toLocalTime())) {
+            throw BusinessException.badRequest("BOOKING_TIME_INVALID",
+                    "调整时段必须在场地开放时段内（开始不早于开放时间，结束不晚于关闭时间）");
+        }
         if (!bookingRepository.deviceAvailableInVenue(deviceId, venueId)) {
             throw BusinessException.conflict("DEVICE_VENUE_MISMATCH", "新设备不属于该场地或不可用");
         }

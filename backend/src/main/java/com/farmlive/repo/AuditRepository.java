@@ -38,10 +38,44 @@ public class AuditRepository {
 
     public void insert(Long operatorId, String operatorName, String roleCode,
                        String action, String detail, String checksum) {
+        insert(operatorId, operatorName, roleCode, action, detail, checksum, null);
+    }
+
+    public void insert(Long operatorId, String operatorName, String roleCode,
+                       String action, String detail, String checksum, String ip) {
         jdbc.update("""
-                INSERT INTO audit_log (operator_id, operator_name, role_code, action, detail, checksum)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """, operatorId, operatorName, roleCode, action, detail, checksum);
+                INSERT INTO audit_log (operator_id, operator_name, role_code, action, detail, checksum, ip)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, operatorId, operatorName, roleCode, action, detail, checksum, ip);
+    }
+
+    public record VerifyRow(
+            Long id,
+            Long operatorId,
+            String operatorName,
+            String roleCode,
+            String action,
+            String detail,
+            String checksum
+    ) {
+    }
+
+    /**
+     * 全量日志（含校验值），供防篡改校验逐条重算比对。
+     */
+    public List<VerifyRow> allForVerify() {
+        return jdbc.query("""
+                SELECT id, operator_id, operator_name, role_code, action, detail, checksum
+                FROM audit_log ORDER BY id
+                """, (rs, rowNum) -> new VerifyRow(
+                rs.getLong("id"),
+                rs.getObject("operator_id", Long.class),
+                rs.getString("operator_name"),
+                rs.getString("role_code"),
+                rs.getString("action"),
+                rs.getString("detail"),
+                rs.getString("checksum")
+        ));
     }
 
     public PageResult<Dtos.AuditLogView> page(String keyword, String action,

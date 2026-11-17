@@ -45,6 +45,33 @@ public class QueueRepository {
     public record QueueGroup(Long venueId, LocalDateTime slotStart) {
     }
 
+    /**
+     * 仍处于排队中（queued）的时段组，用于空闲时段的兜底晋升扫描。
+     */
+    public record QueuedGroup(Long venueId, LocalDateTime slotStart, LocalDateTime slotEnd) {
+    }
+
+    public List<QueuedGroup> queuedGroups() {
+        return jdbc.query("""
+                SELECT venue_id, slot_start, MAX(slot_end) AS slot_end
+                FROM queue_ticket
+                WHERE status = 'queued'
+                GROUP BY venue_id, slot_start
+                """, (rs, rowNum) -> new QueuedGroup(
+                rs.getLong("venue_id"),
+                rs.getTimestamp("slot_start").toLocalDateTime(),
+                rs.getTimestamp("slot_end").toLocalDateTime()
+        ));
+    }
+
+    public boolean hasCandidate(Long venueId, LocalDateTime slotStart) {
+        Integer count = jdbc.queryForObject("""
+                SELECT COUNT(*) FROM queue_ticket
+                WHERE venue_id = ? AND slot_start = ? AND status = 'candidate'
+                """, Integer.class, venueId, Timestamp.valueOf(slotStart));
+        return count != null && count > 0;
+    }
+
     private static final String VIEW_SELECT = """
             SELECT q.id, q.queue_no, q.farmer_id, f.name AS farmer_name, f.farmer_no,
                    q.booking_id, rb.booking_no AS request_booking_no,

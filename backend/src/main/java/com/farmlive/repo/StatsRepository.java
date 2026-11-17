@@ -15,10 +15,18 @@ import java.util.List;
 
 /**
  * 统计查询：四项指标、完成场次明细、趋势和导出数据。
+ * 农产品类型按名称关键字自动归类（粮油/蔬菜/水果/畜禽/水产/其他）。
  */
 @Repository
 public class StatsRepository {
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final java.util.Map<String, List<String>> TYPE_KEYWORDS = java.util.Map.of(
+            "粮油", List.of("米", "面", "油", "粮", "麦", "玉米", "谷"),
+            "蔬菜", List.of("菜", "蔬", "茄", "椒", "萝卜", "藕", "笋", "菇", "芹", "菠", "韭", "薯"),
+            "水果", List.of("果", "莓", "桃", "枣", "橘", "橙", "梨", "葡", "柿", "蕉", "荔", "瓜"),
+            "畜禽", List.of("猪", "牛", "羊", "鸡", "鸭", "鹅", "蛋", "奶"),
+            "水产", List.of("鱼", "虾", "蟹", "鳖", "贝", "蚝")
+    );
 
     private final JdbcTemplate jdbc;
 
@@ -27,7 +35,7 @@ public class StatsRepository {
     }
 
     public record Filter(LocalDateTime from, LocalDateTime to, String countyCode,
-                         Long venueId, String productName) {
+                         Long venueId, String productName, String productType) {
     }
 
     private final RowMapper<Dtos.StatsDetailView> detailMapper = (rs, rowNum) -> new Dtos.StatsDetailView(
@@ -188,6 +196,14 @@ public class StatsRepository {
                 """, String.class);
     }
 
+    public static List<String> typeNames() {
+        return List.copyOf(TYPE_KEYWORDS.keySet());
+    }
+
+    public static List<String> keywordsOf(String type) {
+        return TYPE_KEYWORDS.get(type);
+    }
+
     public Dtos.MyStatsView myStats(Long farmerId) {
         java.util.Map<String, Object> row = jdbc.queryForMap("""
                 SELECT COUNT(*) AS booking_total,
@@ -252,6 +268,41 @@ public class StatsRepository {
             where.append(" AND b.venue_id = ? ");
             args.add(filter.venueId());
         }
+        if (filter.productType() != null && !filter.productType().isBlank()) {
+            where.append(typeClause(filter.productType().trim()));
+        }
         return where.toString();
+    }
+
+    /**
+     * 类型筛选子句：基于预约关联的产品（销售记录或预约产品清单）名称关键字匹配。
+     */
+    private String typeClause(String productType) {
+        if ("其他".equals(productType)) {
+            StringBuilder clause = new StringBuilder();
+            for (String type : TYPE_KEYWORDS.keySet()) {
+                clause.append(" AND NOT ").append(existsLike(type));
+            }
+            clause.append(" AND (EXISTS (SELECT 1 FROM sales_record st WHERE st.booking_id = b.id AND st.product_name <> '')")
+                    .append(" OR EXISTS (SELECT 1 FROM booking_product bt WHERE bt.booking_id = b.id AND bt.product_name <> '')) ");
+            return clause.toString();
+        }
+        List<String> keywords = TYPE_KEYWORDS.get(productType);
+        if (keywords == null) {
+            return "";
+        }
+        return " AND (" + existsLike(productType) + ")";
+    }
+
+    private String existsLike(String productType) {
+        List<String> keywords = TYPE_KEYWORDS.get(productType);
+        String sales = keywords.stream()
+                .map(keyword -> "sp.product_name LIKE '%" + keyword + "%'")
+                .collect(java.util.stream.Collectors.joining(" OR "));
+        String booking = keywords.stream()
+                .map(keyword -> "bp.product_name LIKE '%" + keyword + "%'")
+                .collect(java.util.stream.Collectors.joining(" OR "));
+        return "(EXISTS (SELECT 1 FROM sales_record sp WHERE sp.booking_id = b.id AND (" + sales + "))"
+                + " OR EXISTS (SELECT 1 FROM booking_product bp WHERE bp.booking_id = b.id AND (" + booking + ")))";
     }
 }

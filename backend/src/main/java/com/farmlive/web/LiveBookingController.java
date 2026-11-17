@@ -32,11 +32,13 @@ public class LiveBookingController {
     public ApiResponse<PageResult<Dtos.BookingView>> list(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String countyCode,
+            @RequestParam(required = false) String productType,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         page = Math.max(1, page);
         size = Math.min(50, Math.max(1, size));
-        return ApiResponse.ok(bookingService.listForReview(status, keyword, page, size));
+        return ApiResponse.ok(bookingService.listForReview(status, keyword, countyCode, productType, page, size));
     }
 
     @PostMapping("/{id}/review")

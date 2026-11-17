@@ -47,8 +47,8 @@ export async function get<T>(url: string, params?: Record<string, unknown>): Pro
   return response.data
 }
 
-export async function post<T>(url: string, data?: unknown): Promise<T> {
-  const response = (await http.post(url, data)) as unknown as ApiResponse<T>
+export async function post<T>(url: string, data?: unknown, config?: { timeout?: number }): Promise<T> {
+  const response = (await http.post(url, data, config)) as unknown as ApiResponse<T>
   return response.data
 }
 

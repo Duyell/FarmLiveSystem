@@ -11,6 +11,7 @@ import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
+import java.util.List;
 
 /**
  * 操作日志：记录关键业务操作，提供查询和导出。
@@ -29,7 +30,30 @@ public class AuditService {
         String role = user == null ? "system" : safe(user.roleCode(), "system");
         Long operatorId = user == null ? null : user.id();
         String content = operatorId + "|" + name + "|" + role + "|" + action + "|" + detail;
-        repository.insert(operatorId, name, role, action, detail, checksum(content));
+        repository.insert(operatorId, name, role, action, detail, checksum(content), currentIp());
+    }
+
+    /**
+     * 敏感操作留痕：明确记录来源 IP。
+     */
+    public void recordSensitive(CurrentUser user, String action, String detail) {
+        String name = user == null ? "系统" : safe(user.displayName(), user.username());
+        String role = user == null ? "system" : safe(user.roleCode(), "system");
+        Long operatorId = user == null ? null : user.id();
+        String content = operatorId + "|" + name + "|" + role + "|" + action + "|" + detail;
+        repository.insert(operatorId, name, role, action, detail, checksum(content), currentIp());
+    }
+
+    private String currentIp() {
+        try {
+            var attributes = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attributes instanceof org.springframework.web.context.request.ServletRequestAttributes servlet) {
+                return servlet.getRequest().getRemoteAddr();
+            }
+        } catch (Exception ignored) {
+            // 非请求上下文（如调度任务）无 IP
+        }
+        return null;
     }
 
     /**
@@ -58,6 +82,24 @@ public class AuditService {
 
     public java.util.List<Dtos.AuditLogView> export(String keyword, String action, String from, String to) {
         return repository.listAll(keyword, action, parseDate(from, false), parseDate(to, true));
+    }
+
+    /**
+     * 防篡改校验：逐条重算校验值并比对，返回不一致的日志编号。
+     */
+    public Dtos.AuditVerifyView verify() {
+        List<Long> tampered = new java.util.ArrayList<>();
+        int total = 0;
+        for (AuditRepository.VerifyRow row : repository.allForVerify()) {
+            total++;
+            String content = row.operatorId() + "|" + safe(row.operatorName(), "system")
+                    + "|" + safe(row.roleCode(), "system") + "|" + row.action() + "|" + safe(row.detail(), "");
+            String expected = checksum(content);
+            if (row.checksum() == null || !row.checksum().equals(expected)) {
+                tampered.add(row.id());
+            }
+        }
+        return new Dtos.AuditVerifyView(total, total - tampered.size(), tampered);
     }
 
     private LocalDateTime parseDate(String value, boolean endOfDay) {
