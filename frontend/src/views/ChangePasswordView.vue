@@ -2,7 +2,7 @@
   <div class="change-page">
     <div class="change-card">
       <h1>修改初始密码</h1>
-      <p class="hint">首次登录必须修改密码，修改后需要重新登录。</p>
+      <p class="hint">首次登录必须修改密码，修改后直接进入主界面。</p>
       <el-form :model="form" label-position="top">
         <el-form-item label="旧密码">
           <el-input v-model="form.oldPassword" type="password" show-password size="large" />
@@ -23,12 +23,13 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { post } from '../api/http'
-import { clearAuth } from '../api/auth'
+import { saveAuth, type UserInfo } from '../api/auth'
 
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 const form = reactive({
   oldPassword: '',
@@ -51,13 +52,15 @@ async function submit() {
   }
   loading.value = true
   try {
-    await post('/auth/change-password', {
+    // 后端改密成功后返回新 token + user（旧 token 已失效），直接进主界面无需重新登录
+    const result = await post<{ token: string; user: UserInfo }>('/auth/change-password', {
       oldPassword: form.oldPassword,
       newPassword: form.newPassword
     })
-    clearAuth()
-    ElMessage.success('密码修改成功，请重新登录')
-    await router.replace('/login')
+    saveAuth(result.token, result.user)
+    ElMessage.success('密码修改成功，已进入主界面')
+    const redirect = (route.query.redirect as string) || '/'
+    await router.replace(redirect)
   } catch (error) {
     ElMessage.error((error as Error).message)
   } finally {

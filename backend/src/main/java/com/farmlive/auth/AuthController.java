@@ -33,18 +33,24 @@ public class AuthController {
         return ApiResponse.ok(authService.login(request));
     }
 
+    @PostMapping("/verify-password")
+    public ApiResponse<Dtos.VerifyTokenView> verifyPassword(
+            @RequestAttribute(AuthInterceptor.CURRENT_USER) CurrentUser user,
+            @Valid @RequestBody Dtos.VerifyPasswordRequest request) {
+        return ApiResponse.ok(authService.verifyPassword(user, request));
+    }
+
     @GetMapping("/me")
     public ApiResponse<Dtos.UserView> me(@RequestAttribute(AuthInterceptor.CURRENT_USER) CurrentUser user) {
         return ApiResponse.ok(authService.me(user));
     }
 
     @PostMapping("/change-password")
-    public ApiResponse<Void> changePassword(
+    public ApiResponse<Dtos.LoginResponse> changePassword(
             @RequestAttribute(AuthInterceptor.CURRENT_USER) CurrentUser user,
             @RequestAttribute(AuthInterceptor.CURRENT_TOKEN) String token,
             @Valid @RequestBody Dtos.ChangePasswordRequest request) {
-        authService.changePassword(user, request, token);
-        return ApiResponse.ok();
+        return ApiResponse.ok(authService.changePassword(user, request, token));
     }
 
     @PostMapping("/logout")
