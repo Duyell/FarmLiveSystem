@@ -152,6 +152,12 @@ npm run build
 | 队列管理 | `GET /api/live/queues`、`POST /api/live/queues/{id}/close` |
 | 通知 | `GET /api/notifications`、`POST /api/notifications/{id}/read` |
 | 通知管理 | `GET /api/live/notifications`、`POST /api/live/notifications/{id}/retry`、`/api/live/notification-templates` |
+| AI 问答 | `POST /api/qa/ask`、`GET /api/qa/records` |
+| 知识库 | `GET/POST/PUT/DELETE /api/knowledge/docs`（配置 `app.ai.*` 或 `AI_CHAT_API_KEY`/`AI_EMBED_API_KEY` 环境变量） |
+| 报表导出 | `GET /api/stats/export/excel`、`GET /api/stats/export/pdf`（统计员为聚合口径） |
+| 日志校验 | `GET /api/admin/logs/verify` |
+| 二次验证 | `POST /api/auth/verify-password`、`GET /api/admin/farmers/{id}/phone?verifyToken=` |
+| 数据备份 | `deploy/backup/backup-mysql.ps1`（定时任务注册见 deploy/backup/README.md） |
 | 修改密码 | `POST /api/auth/change-password` |
 | 退出 | `POST /api/auth/logout` |
 | 工作台 | `GET /api/admin/dashboard` |

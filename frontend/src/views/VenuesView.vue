@@ -33,6 +33,7 @@
             <el-tag :type="statusTag(row.status)">{{ statusLabel(row.status) }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="updatedAt" label="更新时间" width="170" />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
@@ -82,10 +83,20 @@
             <el-option label="停用" value="disabled" />
           </el-select>
         </el-form-item>
+        <el-form-item v-if="isEdit" required label="修改原因">
+          <el-input v-model="form.changeReason" maxlength="200" placeholder="必填：本次修改的原因，会写入操作日志" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="save">保存</el-button>
+        <el-button
+          type="primary"
+          :loading="saving"
+          :disabled="isEdit && (!form.changeReason.trim() || formUnchanged)"
+          @click="save"
+        >
+          保存
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -109,6 +120,7 @@ interface Venue {
   openEnd: string
   status: string
   createdAt: string
+  updatedAt: string
 }
 
 const rows = ref<Venue[]>([])
@@ -138,7 +150,23 @@ const form = reactive({
   capacity: 10,
   openStart: '08:00',
   openEnd: '20:00',
-  status: 'available'
+  status: 'available',
+  changeReason: ''
+})
+
+// 编辑时的字段快照：数据无变化时禁止保存（仅填原因不允许提交）
+const originalSnapshot = ref('')
+const formUnchanged = computed(() => {
+  if (!isEdit.value || !originalSnapshot.value) return false
+  return JSON.stringify({
+    name: form.name,
+    location: form.location,
+    countyCode: form.countyCode,
+    capacity: form.capacity,
+    openStart: form.openStart,
+    openEnd: form.openEnd,
+    status: form.status
+  }) === originalSnapshot.value
 })
 
 function statusLabel(value: string) {
@@ -195,18 +223,32 @@ function openCreate() {
     capacity: 10,
     openStart: '08:00',
     openEnd: '20:00',
-    status: 'available'
+    status: 'available',
+    changeReason: ''
   })
   dialogVisible.value = true
 }
 
 function openEdit(row: Venue) {
   isEdit.value = true
-  Object.assign(form, row)
+  originalSnapshot.value = JSON.stringify({
+    name: row.name,
+    location: row.location,
+    countyCode: row.countyCode ?? '',
+    capacity: row.capacity,
+    openStart: row.openStart,
+    openEnd: row.openEnd,
+    status: row.status
+  })
+  Object.assign(form, row, { changeReason: '' })
   dialogVisible.value = true
 }
 
 async function save() {
+  if (isEdit.value && formUnchanged.value) {
+    ElMessage.warning('未修改任何内容，无需保存')
+    return
+  }
   if (!form.venueNo.trim() || !form.name.trim() || !form.location.trim()) {
     ElMessage.warning('请把场地编号、名称、位置填完整')
     return
@@ -229,7 +271,8 @@ async function save() {
       capacity: form.capacity,
       openStart: form.openStart,
       openEnd: form.openEnd,
-      status: form.status
+      status: form.status,
+      changeReason: form.changeReason
     }
     if (isEdit.value) {
       await put(`/live/venues/${form.id}`, payload)

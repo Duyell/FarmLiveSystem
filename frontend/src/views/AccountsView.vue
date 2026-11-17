@@ -5,7 +5,7 @@
 
     <div class="page-card">
       <div class="page-toolbar">
-        <el-input v-model="keyword" placeholder="搜索用户名 / 显示名" clearable style="width: 240px" @keyup.enter="load" />
+        <el-input v-model="keyword" placeholder="搜索用户名 / 显示名" clearable autocomplete="new-password" style="width: 240px" @keyup.enter="load" />
         <el-button type="primary" @click="load">查询</el-button>
         <el-button @click="openCreate">新增账号</el-button>
       </div>
@@ -54,7 +54,7 @@
           <el-input v-model="form.username" :disabled="isEdit" placeholder="3-30 位字母、数字或下划线" />
         </el-form-item>
         <el-form-item v-if="!isEdit" label="初始密码">
-          <el-input v-model="form.password" type="password" show-password placeholder="至少 8 位，含字母和数字" />
+          <el-input v-model="form.password" type="password" show-password autocomplete="new-password" placeholder="至少 8 位，含字母和数字" />
         </el-form-item>
         <el-form-item label="显示名">
           <el-input v-model="form.displayName" />

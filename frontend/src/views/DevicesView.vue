@@ -25,6 +25,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="calibrationDate" label="下次校准" width="110" />
+        <el-table-column prop="updatedAt" label="更新时间" width="170" />
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
@@ -81,13 +82,20 @@
         <el-form-item label="下次校准">
           <el-date-picker v-model="form.calibrationDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" />
         </el-form-item>
-        <el-form-item v-if="isEdit" label="修改原因">
-          <el-input v-model="form.changeReason" maxlength="200" placeholder="本次修改的原因，会写入操作日志" />
+        <el-form-item v-if="isEdit" required label="修改原因">
+          <el-input v-model="form.changeReason" maxlength="200" placeholder="必填：本次修改的原因，会写入操作日志" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="save">保存</el-button>
+        <el-button
+          type="primary"
+          :loading="saving"
+          :disabled="isEdit && (!form.changeReason.trim() || formUnchanged)"
+          @click="save"
+        >
+          保存
+        </el-button>
       </template>
     </el-dialog>
 
@@ -170,6 +178,7 @@ interface Device {
   status: string
   calibrationDate: string | null
   createdAt: string
+  updatedAt: string
 }
 
 interface DeviceFault {
@@ -225,6 +234,20 @@ const form = reactive({
   changeReason: ''
 })
 
+// 编辑时的字段快照：数据无变化时禁止保存（仅填原因不允许提交）
+const originalSnapshot = ref('')
+const formUnchanged = computed(() => {
+  if (!isEdit.value || !originalSnapshot.value) return false
+  return JSON.stringify({
+    name: form.name,
+    model: form.model,
+    config: form.config,
+    venueId: form.venueId,
+    status: form.status,
+    calibrationDate: form.calibrationDate
+  }) === originalSnapshot.value
+})
+
 function statusLabel(value: string) {
   return { available: '可用', maintenance: '维修', disabled: '停用' }[value] || value
 }
@@ -277,6 +300,14 @@ function openCreate() {
 
 function openEdit(row: Device) {
   isEdit.value = true
+  originalSnapshot.value = JSON.stringify({
+    name: row.name,
+    model: row.model || '',
+    config: row.config || '',
+    venueId: row.venueId,
+    status: row.status,
+    calibrationDate: row.calibrationDate || ''
+  })
   Object.assign(form, {
     id: row.id,
     deviceNo: row.deviceNo,
@@ -292,6 +323,10 @@ function openEdit(row: Device) {
 }
 
 async function save() {
+  if (isEdit.value && formUnchanged.value) {
+    ElMessage.warning('未修改任何内容，无需保存')
+    return
+  }
   if (!form.deviceNo.trim() || !form.name.trim() || !form.venueId) {
     ElMessage.warning('请把组合编号、名称、所属场地填完整')
     return

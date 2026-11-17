@@ -4,10 +4,12 @@ server:
 spring:
   application:
     name: farm-live-backend
+  config:
+    import: optional:file:./application-local.yml
   datasource:
     url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:farm_live}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
-    username: ${DB_USER:root}
-    password: ${DB_PASSWORD:020218}
+    username: ${DB_USER:farmlive}
+    password: ${DB_PASSWORD:farmlive123}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
@@ -29,7 +31,17 @@ app:
     ttl-hours: 8
   upload-dir: ${UPLOAD_DIR:uploads}
   cors:
-    allowed-origins: http://localhost:5173,http://127.0.0.1:5173
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,https://app.luckydogovo.xyz}
+  ai:
+    enabled: ${AI_ENABLED:true}
+    chat-base-url: ${AI_CHAT_BASE_URL:https://api.deepseek.com}
+    chat-api-key: ${AI_CHAT_API_KEY:}
+    chat-model: ${AI_CHAT_MODEL:deepseek-v4-flash}
+    embed-base-url: ${AI_EMBED_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+    embed-api-key: ${AI_EMBED_API_KEY:}
+    embed-model: ${AI_EMBED_MODEL:text-embedding-v3}
+    top-k: ${AI_TOP_K:4}
+    score-threshold: ${AI_SCORE_THRESHOLD:0.35}
 
 logging:
   level:

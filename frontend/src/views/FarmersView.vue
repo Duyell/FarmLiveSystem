@@ -34,9 +34,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="建档时间" width="170" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column prop="updatedAt" label="更新时间" width="170" />
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openQualification(row)">资质</el-button>
+            <el-button link type="primary" @click="openPhone(row)">完整号码</el-button>
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="remove(row)">删除</el-button>
           </template>
@@ -82,13 +84,20 @@
             <el-radio value="disabled">停用</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item v-if="isEdit" label="修改原因">
-          <el-input v-model="form.changeReason" maxlength="200" placeholder="本次修改的原因，会写入操作日志" />
+        <el-form-item v-if="isEdit" required label="修改原因">
+          <el-input v-model="form.changeReason" maxlength="200" placeholder="必填：本次修改的原因，会写入操作日志" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="save">保存</el-button>
+        <el-button
+          type="primary"
+          :loading="saving"
+          :disabled="isEdit && (!form.changeReason.trim() || formUnchanged)"
+          @click="save"
+        >
+          保存
+        </el-button>
       </template>
     </el-dialog>
 
@@ -97,6 +106,36 @@
       :farmer-id="qualificationFarmerId"
       :farmer-name="qualificationFarmerName"
     />
+
+    <el-dialog v-model="phoneDialogVisible" title="查看完整手机号" width="420px">
+      <template v-if="!revealedPhone">
+        <p class="phone-tip">该操作属于敏感操作，需要输入当前账号密码二次验证（查看行为将记录审计日志）。</p>
+        <el-form @submit.prevent>
+          <el-form-item label="账号密码">
+            <el-input
+              v-model="phonePassword"
+              type="password"
+              show-password
+              placeholder="输入当前登录账号的密码"
+              @keyup.enter="confirmPhone"
+            />
+          </el-form-item>
+        </el-form>
+      </template>
+      <template v-else>
+        <div class="phone-result">
+          <div class="phone-name">{{ revealedPhone.farmerNo }} · {{ revealedPhone.name }}</div>
+          <div class="phone-number">{{ revealedPhone.phone }}</div>
+          <div class="phone-note">完整号码已展示，请勿外传；本次查看已记录操作日志。</div>
+        </div>
+      </template>
+      <template #footer>
+        <el-button @click="phoneDialogVisible = false">关闭</el-button>
+        <el-button v-if="!revealedPhone" type="primary" :loading="phoneVerifying" @click="confirmPhone">
+          验证并查看
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -105,6 +144,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { del, get, post, put, type PageResult } from '../api/http'
 import { findRegionPath } from '../api/regions'
+import { getFarmerPhone, verifyPassword, type FarmerPhone } from '../api/ai'
 import RegionSelect from '../components/RegionSelect.vue'
 import FarmerQualificationDialog from '../components/FarmerQualificationDialog.vue'
 
@@ -118,6 +158,7 @@ interface Farmer {
   qualificationStatus: string
   status: string
   createdAt: string
+  updatedAt: string
 }
 
 const rows = ref<Farmer[]>([])
@@ -134,6 +175,37 @@ const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
 const isEdit = ref(false)
+
+const phoneDialogVisible = ref(false)
+const phonePassword = ref('')
+const phoneVerifying = ref(false)
+const phoneTargetId = ref(0)
+const revealedPhone = ref<FarmerPhone | null>(null)
+
+function openPhone(row: Farmer) {
+  phoneTargetId.value = row.id
+  phonePassword.value = ''
+  revealedPhone.value = null
+  phoneDialogVisible.value = true
+}
+
+async function confirmPhone() {
+  if (!phonePassword.value) {
+    ElMessage.warning('请输入密码')
+    return
+  }
+  phoneVerifying.value = true
+  try {
+    const verify = await verifyPassword(phonePassword.value)
+    const phone = await getFarmerPhone(phoneTargetId.value, verify.verifyToken)
+    revealedPhone.value = phone
+    phonePassword.value = ''
+  } catch (error) {
+    ElMessage.error((error as Error).message)
+  } finally {
+    phoneVerifying.value = false
+  }
+}
 const qualificationVisible = ref(false)
 const qualificationFarmerId = ref(0)
 const qualificationFarmerName = ref('')
@@ -147,6 +219,19 @@ const form = reactive({
   qualificationStatus: 'pending',
   status: 'active',
   changeReason: ''
+})
+
+// 编辑时的字段快照：数据无变化时禁止保存（仅填原因不允许提交）
+const originalSnapshot = ref('')
+const formUnchanged = computed(() => {
+  if (!isEdit.value || !originalSnapshot.value) return false
+  return JSON.stringify({
+    name: form.name,
+    countyCode: form.countyCode,
+    phone: form.phone,
+    qualificationStatus: form.qualificationStatus,
+    status: form.status
+  }) === originalSnapshot.value
 })
 
 function qualificationLabel(value: string) {
@@ -203,6 +288,13 @@ function openCreate() {
 
 function openEdit(row: Farmer) {
   isEdit.value = true
+  originalSnapshot.value = JSON.stringify({
+    name: row.name,
+    countyCode: row.countyCode ?? '',
+    phone: row.phone,
+    qualificationStatus: row.qualificationStatus,
+    status: row.status
+  })
   Object.assign(form, row, { changeReason: '' })
   dialogVisible.value = true
 }
@@ -214,6 +306,10 @@ function openQualification(row: Farmer) {
 }
 
 async function save() {
+  if (isEdit.value && formUnchanged.value) {
+    ElMessage.warning('未修改任何内容，无需保存')
+    return
+  }
   if (!form.farmerNo.trim() || !form.name.trim() || !form.phone.trim()) {
     ElMessage.warning('请把农户编号、姓名、手机号填完整')
     return
@@ -275,6 +371,35 @@ onMounted(load)
 </script>
 
 <style scoped>
+.phone-tip {
+  font-size: 13px;
+  color: #5e6d82;
+  margin: 0 0 12px;
+  line-height: 1.6;
+}
+
+.phone-result {
+  text-align: center;
+  padding: 8px 0 4px;
+}
+
+.phone-name {
+  font-size: 13px;
+  color: #5e6d82;
+}
+
+.phone-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2f7d32;
+  letter-spacing: 1px;
+  margin: 8px 0;
+}
+
+.phone-note {
+  font-size: 12px;
+  color: #a8b2c1;
+}
 .pager {
   margin-top: 16px;
   justify-content: flex-end;

@@ -3,11 +3,15 @@ backend/target/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+backend/uploads/
 
 # Local runtime data
 .local/
 deploy/mysql-data/
 *.log
+frontend/.claude/
+frontend/.playwright-cli/
+frontend/login.yaml
 
 # Secrets
 .env

@@ -29,9 +29,12 @@
 
     <el-container>
       <el-header class="header">
-        <div>
-          <div class="header-title">{{ pageTitle }}</div>
-          <div class="header-sub">{{ pageSubtitle }}</div>
+        <div class="header-left">
+          <el-icon class="mobile-menu-btn" :size="22" @click="mobileOpen = true"><Menu /></el-icon>
+          <div>
+            <div class="header-title">{{ pageTitle }}</div>
+            <div class="header-sub">{{ pageSubtitle }}</div>
+          </div>
         </div>
         <el-tooltip content="通知中心" placement="bottom">
           <el-badge
@@ -50,6 +53,31 @@
         <router-view />
       </el-main>
     </el-container>
+
+    <el-drawer v-model="mobileOpen" direction="ltr" size="240px" :with-header="false">
+      <div class="mobile-aside">
+        <div class="brand">
+          <div class="brand-mark"><el-icon :size="18"><LocationFilled /></el-icon></div>
+          <span class="brand-title">助农直播管理系统</span>
+        </div>
+        <div class="user-card">
+          <div class="user-avatar">{{ avatarText }}</div>
+          <div class="user-meta">
+            <div class="user-name">{{ roleLabel }}：{{ user?.displayName || user?.username }}</div>
+            <div class="user-role">{{ user?.roleName }}权限</div>
+          </div>
+        </div>
+        <el-menu :default-active="route.path" router class="menu" @select="mobileOpen = false">
+          <el-menu-item v-for="item in menus" :key="item.path" :index="item.path">
+            <el-icon><component :is="item.icon" /></el-icon>
+            <span>{{ item.title }}</span>
+          </el-menu-item>
+        </el-menu>
+        <div class="aside-footer">
+          <el-button class="logout-button" :icon="SwitchButton" @click="logout">退出登录</el-button>
+        </div>
+      </div>
+    </el-drawer>
   </el-container>
 </template>
 
@@ -60,12 +88,15 @@ import { ElMessage } from 'element-plus'
 import {
   Bell,
   Calendar,
+  ChatDotRound,
+  Collection,
   DataBoard,
   Document,
   Files,
   List,
   LocationFilled,
   Lock,
+  Menu,
   Money,
   QuestionFilled,
   Refresh,
@@ -86,16 +117,12 @@ interface MenuItem {
 const menuByRole: Record<string, MenuItem[]> = {
   system_admin: [
     { path: '/dashboard', title: '工作台', icon: DataBoard },
-    { path: '/bookings', title: '直播预约审核', icon: Calendar },
-    { path: '/live/adjustments', title: '预约调整审批', icon: Refresh },
-    { path: '/basic-info', title: '基础信息管理', icon: Files },
-    { path: '/live/queues', title: '直播排队与候补', icon: Sort },
-    { path: '/live/sales', title: '销售录入', icon: Money },
     { path: '/stats', title: '数据统计', icon: TrendCharts },
-    { path: '/live/notifications', title: '通知管理', icon: Bell },
     { path: '/admin/logs', title: '操作日志', icon: Document },
+    { path: '/knowledge', title: 'AI 知识库', icon: Collection },
+    { path: '/assistant', title: 'AI 助手', icon: ChatDotRound },
     { path: '/accounts', title: '权限管理', icon: Lock },
-    { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
+    { path: '/help', title: '帮助中心', icon: QuestionFilled }
   ],
   live_admin: [
     { path: '/bookings', title: '直播预约审核', icon: Calendar },
@@ -105,7 +132,8 @@ const menuByRole: Record<string, MenuItem[]> = {
     { path: '/live/sales', title: '销售录入', icon: Money },
     { path: '/stats', title: '数据统计', icon: TrendCharts },
     { path: '/live/notifications', title: '通知管理', icon: Bell },
-    { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
+    { path: '/assistant', title: 'AI 助手', icon: ChatDotRound },
+    { path: '/help', title: '帮助中心', icon: QuestionFilled }
   ],
   farmer: [
     { path: '/farmer/bookings/new', title: '直播预约', icon: Calendar },
@@ -113,12 +141,13 @@ const menuByRole: Record<string, MenuItem[]> = {
     { path: '/farmer/queues', title: '直播排队与候补', icon: Sort },
     { path: '/notifications', title: '通知管理', icon: Bell },
     { path: '/farmer/stats', title: '我的数据', icon: TrendCharts },
-    { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
+    { path: '/assistant', title: 'AI 助手', icon: ChatDotRound },
+    { path: '/help', title: '帮助中心', icon: QuestionFilled }
   ],
   data_viewer: [
     { path: '/stats', title: '数据统计', icon: TrendCharts },
     { path: '/notifications', title: '通知管理', icon: Bell },
-    { path: '/todo?name=帮助中心', title: '帮助中心', icon: QuestionFilled }
+    { path: '/help', title: '帮助中心', icon: QuestionFilled }
   ]
 }
 
@@ -137,7 +166,10 @@ const pageTitleByPath: Record<string, string> = {
   '/stats': '数据统计',
   '/admin/logs': '操作日志',
   '/notifications': '我的通知',
-  '/live/notifications': '通知管理'
+  '/live/notifications': '通知管理',
+  '/assistant': 'AI 助手',
+  '/knowledge': 'AI 知识库',
+  '/help': '帮助中心'
 }
 
 const pageSubtitleByPath: Record<string, string> = {
@@ -155,13 +187,17 @@ const pageSubtitleByPath: Record<string, string> = {
   '/stats': '查看四项指标、完成场次明细和趋势',
   '/admin/logs': '查询和导出关键操作日志',
   '/notifications': '发给您的事件通知（每个事件一条，短信状态在行内显示）',
-  '/live/notifications': '查看发送记录、重试失败短信并维护通知模板'
+  '/live/notifications': '查看发送记录、重试失败短信并维护通知模板',
+  '/assistant': '检索知识库解答预约排队、农产品溯源等问题，不代您操作预约',
+  '/knowledge': '上传与维护 AI 问答的知识库文档',
+  '/help': '按角色查看操作指引与常见问题'
 }
 
 const route = useRoute()
 const router = useRouter()
 const user = currentUser()
 const unread = ref(0)
+const mobileOpen = ref(false)
 
 async function loadUnread() {
   if (!user) return
@@ -176,7 +212,10 @@ function goNotifications() {
   router.push('/notifications')
 }
 
-watch(() => route.path, loadUnread)
+watch(() => route.path, () => {
+  mobileOpen.value = false
+  loadUnread()
+})
 onMounted(loadUnread)
 
 const menus = computed<MenuItem[]>(() => menuByRole[user?.roleCode ?? ''] ?? [])
@@ -336,6 +375,28 @@ async function logout() {
   padding: 0 24px;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mobile-menu-btn {
+  display: none;
+  cursor: pointer;
+  color: #2f7d32;
+}
+
+.mobile-aside {
+  height: 100%;
+  background: linear-gradient(180deg, #2f7d32 0%, #245f27 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 0 14px;
+  overflow-y: auto;
+}
+
 .header-title {
   font-size: 18px;
   font-weight: 600;
@@ -380,67 +441,36 @@ async function logout() {
 }
 
 @media (max-width: 768px) {
-  .layout {
-    flex-direction: column;
-  }
-
   .aside {
-    width: 100% !important;
-    padding: 0 10px 8px;
-  }
-
-  .brand {
-    height: 52px;
-  }
-
-  .user-card,
-  .menu-group {
     display: none;
   }
 
-  .menu {
-    display: flex;
-    flex: none;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-
-  .menu :deep(.el-menu-item) {
-    flex: 0 0 auto;
-    height: 38px;
-    padding: 0 12px;
-    margin: 0 4px 0 0;
-    font-size: 13px;
-  }
-
-  .aside-footer {
-    padding: 4px 0;
-  }
-
-  .logout-button {
-    width: auto;
-    height: 30px;
-    padding: 0 12px;
-    font-size: 12px;
+  .mobile-menu-btn {
+    display: inline-flex;
   }
 
   .header {
-    height: auto;
-    min-height: 58px;
-    padding: 8px 12px;
+    height: 56px;
+    min-height: 56px;
+    padding: 0 12px;
     gap: 8px;
   }
 
   .header-title {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .header-sub {
-    font-size: 11px;
+    display: none;
   }
 
   .main {
-    padding: 12px;
+    padding: 12px 10px;
+  }
+
+  .main :deep(.el-card),
+  .main :deep(.page-card) {
+    border-radius: 10px;
   }
 }
 </style>
