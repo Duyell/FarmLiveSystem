@@ -91,9 +91,11 @@ public class QueueService {
         if (bookingId == null) {
             bookingId = bookingRepository.insertBooking(nextBookingNo(), row.farmerId(), row.venueId(),
                     deviceId, row.slotStart(), row.slotEnd(), "直播预约");
-            bookingRepository.updateReview(bookingId, "approved", null, null);
+            bookingRepository.updateReview(bookingId, "pending_review", null, null);
         } else {
-            bookingRepository.confirmQueuedBooking(bookingId, deviceId);
+            if (bookingRepository.confirmQueuedBooking(bookingId, deviceId) != 1) {
+                throw BusinessException.conflict("BOOKING_STATUS_INVALID", "关联预约状态已变化，请刷新后重试");
+            }
         }
         try {
             for (LocalDateTime slot = row.slotStart(); slot.isBefore(row.slotEnd()); slot = slot.plusHours(1)) {

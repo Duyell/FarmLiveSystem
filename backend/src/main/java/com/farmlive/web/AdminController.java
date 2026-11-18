@@ -445,7 +445,7 @@ public class AdminController {
     }
 
     /**
-     * 校验区域编码：必须存在、启用中且为县级（level=3），返回区域名称作为 county 快照。
+     * 校验区域编码：必须存在、启用中且为县区或二级叶子区域，返回区域名称作为 county 快照。
      * county 列 NOT NULL 且只做展示，统一由后端按编码回写，防止前端伪造文本。
      */
     private String resolveCountyName(String countyCode) {
@@ -457,7 +457,8 @@ public class AdminController {
         if (!region.enabled()) {
             throw BusinessException.badRequest("所属区域已停用");
         }
-        if (region.level() != 3) {
+        boolean secondLevelLeaf = region.level() == 2 && regionRepository.listChildren(region.code()).isEmpty();
+        if (region.level() != 3 && !secondLevelLeaf) {
             throw BusinessException.badRequest("所属区域必须选择到县 / 区一级");
         }
         return region.name();

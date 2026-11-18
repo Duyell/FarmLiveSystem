@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 public class LoginAttemptService {
-    private static final int MAX_FAILURES = 5;
+    private static final int MAX_FAILURES = 3;
     private static final int LOCK_MINUTES = 15;
 
     private record Attempt(int failures, LocalDateTime lockedUntil) {

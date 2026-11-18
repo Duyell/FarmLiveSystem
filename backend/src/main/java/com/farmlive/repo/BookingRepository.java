@@ -135,6 +135,15 @@ public class BookingRepository {
                 """, venueId, deviceId, Timestamp.valueOf(slotTime), bookingId);
     }
 
+    /** 候补确认时可能已为待审核预约锁定资源，审核时应复用该锁。 */
+    public boolean ownsLock(Long venueId, Long deviceId, LocalDateTime slotTime, Long bookingId) {
+        Integer count = jdbc.queryForObject("""
+                SELECT COUNT(*) FROM resource_lock
+                WHERE venue_id = ? AND device_id = ? AND slot_time = ? AND booking_id = ?
+                """, Integer.class, venueId, deviceId, Timestamp.valueOf(slotTime), bookingId);
+        return count != null && count > 0;
+    }
+
     public void deleteLocks(Long bookingId) {
         jdbc.update("DELETE FROM resource_lock WHERE booking_id = ?", bookingId);
     }
@@ -158,9 +167,9 @@ public class BookingRepository {
     /**
      * 候补确认时复用排队创建时的 queued 预约，补上分配的设备。
      */
-    public void confirmQueuedBooking(Long id, Long deviceId) {
-        jdbc.update("""
-                UPDATE booking SET device_id = ?, status = 'approved'
+    public int confirmQueuedBooking(Long id, Long deviceId) {
+        return jdbc.update("""
+                UPDATE booking SET device_id = ?, status = 'pending_review'
                 WHERE id = ? AND status = 'queued'
                 """, deviceId, id);
     }

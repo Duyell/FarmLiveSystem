@@ -140,5 +140,5 @@ export interface FarmerPhone {
 }
 
 export async function getFarmerPhone(id: number, verifyToken: string): Promise<FarmerPhone> {
-  return get<FarmerPhone>(`/admin/farmers/${id}/phone`, { verifyToken })
+  return get<FarmerPhone>(`/live/farmers/${id}/phone`, { verifyToken })
 }

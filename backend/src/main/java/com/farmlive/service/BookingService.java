@@ -88,7 +88,9 @@ public class BookingService {
         if ("approve".equals(result)) {
             try {
                 for (LocalDateTime slot = booking.startTime(); slot.isBefore(booking.endTime()); slot = slot.plusHours(1)) {
-                    repository.insertLock(booking.venueId(), booking.deviceId(), slot, booking.id());
+                    if (!repository.ownsLock(booking.venueId(), booking.deviceId(), slot, booking.id())) {
+                        repository.insertLock(booking.venueId(), booking.deviceId(), slot, booking.id());
+                    }
                 }
             } catch (DuplicateKeyException ex) {
                 throw BusinessException.conflict("BOOKING_CONFLICT", "该时段资源已被占用，建议使用推荐时间另约");
@@ -103,6 +105,8 @@ public class BookingService {
                 throw BusinessException.badRequest("推荐时间必须晚于当前时间");
             }
             repository.updateReview(booking.id(), "rejected", comment, recommended);
+            repository.deleteLocks(booking.id());
+            queueService.promoteNext(booking.venueId(), booking.startTime(), booking.endTime());
         } else {
             throw BusinessException.badRequest("审核结果只能是 approve 或 reject");
         }

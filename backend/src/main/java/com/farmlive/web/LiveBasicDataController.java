@@ -3,6 +3,8 @@ package com.farmlive.web;
 import com.farmlive.common.ApiResponse;
 import com.farmlive.common.PageResult;
 import com.farmlive.dto.Dtos;
+import com.farmlive.auth.AuthInterceptor;
+import com.farmlive.auth.CurrentUser;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,6 +37,14 @@ public class LiveBasicDataController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         return adminController.farmers(keyword, countyCode, page, size);
+    }
+
+    @GetMapping("/farmers/{id}/phone")
+    public ApiResponse<Dtos.FarmerPhoneView> farmerPhone(
+            @RequestAttribute(AuthInterceptor.CURRENT_USER) CurrentUser user,
+            @PathVariable Long id,
+            @RequestParam(value = "verifyToken", required = false) String verifyToken) {
+        return adminController.farmerPhone(user, id, verifyToken);
     }
 
     @PostMapping("/farmers")

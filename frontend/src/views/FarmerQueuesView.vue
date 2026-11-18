@@ -253,7 +253,7 @@ async function confirmIt(row: QueueTicket) {
   acting.value = true
   try {
     const result = await confirmQueue(row.id)
-    ElMessage.success(`候补确认成功，已分配设备组合并生成预约（单号 ${result.confirmedBookingId}）`)
+    ElMessage.success(`候补确认成功，已分配设备组合，预约待管理员审核（预约 ID：${result.confirmedBookingId}）`)
     await load()
   } catch (error) {
     ElMessage.error((error as Error).message)

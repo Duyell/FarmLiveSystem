@@ -31,6 +31,7 @@ export function findRegionPath(countyCode: string): RegionOption[] | null {
   if (!countyCode || !treeCache) return null
   for (const province of treeCache) {
     for (const city of province.children ?? []) {
+      if (city.code === countyCode && !city.children?.length) return [province, city]
       for (const county of city.children ?? []) {
         if (county.code === countyCode) return [province, city, county]
       }

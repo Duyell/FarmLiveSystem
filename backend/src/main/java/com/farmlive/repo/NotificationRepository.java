@@ -30,7 +30,10 @@ public class NotificationRepository {
             SELECT n.id, n.type, n.channel, n.title, n.content, n.status, n.retry_count,
                    n.sent_at, n.read_at, n.created_at, s.status AS sms_status
             FROM notification n
-            LEFT JOIN notification s ON s.event_key = n.event_key AND s.channel = 'sms'
+            LEFT JOIN notification s ON s.id = (
+                SELECT MAX(sms.id) FROM notification sms
+                WHERE sms.account_id = n.account_id AND sms.event_key = n.event_key AND sms.channel = 'sms'
+            )
             """;
 
     private final JdbcTemplate jdbc;
@@ -223,7 +226,8 @@ public class NotificationRepository {
                   AND b.start_time BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 1 HOUR)
                   AND NOT EXISTS (
                     SELECT 1 FROM notification n
-                    WHERE n.account_id = a.id AND n.type = 'reminder' AND n.content LIKE CONCAT('%', b.booking_no, '%')
+                    WHERE n.account_id = a.id AND n.type = 'reminder' AND n.channel = 'in_app'
+                      AND n.event_key = CONCAT('reminder:', b.booking_no)
                   )
                 """, eventMapper);
     }
